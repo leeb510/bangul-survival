@@ -100,6 +100,20 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 
 .lvl{max-width:760px;width:100%;display:flex;flex-direction:column;gap:12px;align-items:center}
 .lvl h2{color:var(--paper);-webkit-text-stroke:0;text-shadow:0 3px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
+.bag{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center;align-items:center;background:var(--paper);border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);padding:7px 12px 5px;width:100%;box-sizing:border-box}
+.grp{display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;justify-content:center}
+.gl{font-family:var(--font-display);font-size:13px;color:var(--soft);align-self:center;margin-right:4px;white-space:nowrap}
+.slot{width:58px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.sic{position:relative;width:34px;height:34px;border:2px solid var(--ink);border-radius:9px;background:#fff;display:grid;place-items:center;box-sizing:border-box}
+.sic canvas{width:28px;height:28px}
+.slot.evo .sic{background:#fff3c4}
+.slot.up .sic{outline:3px solid var(--pink);outline-offset:1px}
+.slot.empty .sic{border-style:dashed;opacity:.45;background:transparent}
+.lv{position:absolute;right:-9px;bottom:-6px;font-family:var(--font-display);font-size:10px;background:var(--mint);border:1.5px solid var(--ink);border-radius:999px;padding:0 4px;line-height:1.35;white-space:nowrap}
+.slot.evo .lv{background:var(--sun)}
+.sn2{font-size:11px;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot.empty .sn2{color:var(--soft)}
+.lvl h2{font-size:clamp(22px,4vw,28px)}
 .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
 @media (max-width:540px){.cards{grid-template-columns:1fr}}
 .card{background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:12px 12px 14px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;cursor:pointer;font-family:var(--font-body);color:var(--ink);min-width:0}
@@ -288,7 +302,7 @@ function newRun(stage){
   G = { stage, st:STAGES[stage], time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
     p:{ x:0, y:0, fx:1, fy:0, hp:0, maxHp:0, inv:0, dashT:0, dashCd:0, walk:0, moving:false },
     enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon('star')], passives:{},
-    spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:22, clearT:0, dieT:0, combo:0, comboT:0 };
+    spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
   recalc(); G.p.hp = G.p.maxHp;
   snapCam();
 }
@@ -465,7 +479,7 @@ function makeEnemy(kind, x, y, opt = {}){
   const d = EN[kind], tm = 1 + G.time / 60 * .32, s = opt.s || 1;
   const hp = opt.hp || d.hp * G.st.hpMul * tm;
   return { kind, x, y, hp, max:hp, s, r:d.r * s, fly:!!d.fly, xp:d.xp,
-    spd: d.spd * (opt.spdMul || 1) * (1 + Math.min(G.time, 600) / 600 * .25),
+    spd: d.spd * .9 * (opt.spdMul || 1) * (1 + Math.min(G.time, 600) / 600 * .25),
     dmg: Math.round(d.dmg * (1 + Math.min(G.time, 600) / 600 * .6) * (opt.dmgMul || 1)),
     ph: Math.random() * TAU, z:0, kx:0, ky:0, hurt:0, dead:false, col:G.st.slime, elite:!!opt.elite, boss:!!opt.boss, petalT:0, slowT:0, slowMul:1, walk:0, look:1 };
 }
@@ -840,7 +854,7 @@ function updateItems(dt){
   const p = G.p;
   G.giftT -= dt;
   if (G.giftT <= 0){
-    G.giftT = 28 + Math.random() * 10;
+    G.giftT = (28 + Math.random() * 10) / 1.2;
     const a = Math.random() * TAU, r = 220 + Math.random() * 120;
     G.items.push({ k:'gift', x:p.x + Math.cos(a) * r, y:p.y + Math.sin(a) * r, z:0, vz:0, age:0 });
   }
@@ -853,7 +867,7 @@ function updateItems(dt){
       it.taken = true;
       if (it.k === 'candy'){ G.coins += 1; sfx('gem'); addText(it.x, it.y - 20, '+1', '#ffb3d1'); }
       else if (it.k === 'bag'){ G.coins += 10; sfx('heart'); toast('별사탕 +10'); }
-      else if (it.k === 'heart'){ p.hp = Math.min(p.maxHp, p.hp + 30); sfx('heart'); addText(p.x, p.y - 34, '+30', '#7ee08a'); }
+      else if (it.k === 'heart'){ p.hp = p.maxHp; sfx('heart'); addText(p.x, p.y - 34, '체력 가득!', '#7ee08a', true); burst(p.x, p.y - 14, ['#ff5d7a', '#7ee08a', '#fff'], 14, { speed:90 }); }
       else if (it.k === 'magnet'){ for (const g of G.gems) g.m = true; sfx('chest'); toast('경험치를 모두 끌어당겨요!'); }
       else if (it.k === 'chest'){ sfx('chest'); G.shake = .15; burst(it.x, it.y - 14, ['#ffd166', '#ff8fc5', '#6fd0ff', '#fff'], 30, { speed:160, up:80 }); toast('보물상자! ' + upgradeRandom()); }
       else if (it.k === 'gift'){
@@ -925,6 +939,15 @@ function applyChoice(c){
   else if (c.type === 'heal') G.p.hp = Math.min(G.p.maxHp, G.p.hp + 40);
   else if (c.type === 'coin') G.coins += 10;
 }
+function bagHtml(hl){
+  const slot = (icon, name, lv, evo, up) => `<div class="slot${evo ? ' evo' : ''}${up ? ' up' : ''}" title="${name}"><span class="sic"><canvas width="56" height="56" data-icon="${icon}" data-evo="${evo ? 1 : 0}" aria-hidden="true"></canvas><span class="lv">${evo ? '진화' : 'Lv.' + lv}</span></span><span class="sn2">${name}</span></div>`;
+  const empty = n => '<div class="slot empty"><span class="sic"></span><span class="sn2">빈 칸</span></div>'.repeat(Math.max(0, n));
+  const pk = Object.keys(G.passives);
+  return `<div class="bag" aria-label="지금 가진 무기와 능력">
+    <div class="grp"><span class="gl">무기 ${G.weapons.length}/4</span>${G.weapons.map(w => slot(w.id, w.evo ? EVO[w.id].name : WPN[w.id].name, w.lvl, w.evo, hl && hl.has(w.id))).join('')}${empty(4 - G.weapons.length)}</div>
+    <div class="grp"><span class="gl">능력 ${pk.length}/4</span>${pk.map(id => slot(id, PAS[id].name, G.passives[id], false, hl && hl.has(id))).join('')}${empty(4 - pk.length)}</div>
+  </div>`;
+}
 function openLevelUp(){
   state = 'levelup'; releaseJoy(); keys.clear(); sfx('level');
   const ch = pickChoices();
@@ -948,7 +971,8 @@ function openLevelUp(){
   };
   const pips = l => l ? '●'.repeat(l) + '○'.repeat(5 - l) : '';
   screenEl.hidden = false; document.body.classList.add('menu');
-  screenEl.innerHTML = `<div class="lvl"><h2>레벨 업! Lv.${G.level - G.pending + 1}</h2><div class="cards">${ch.map((c, i) => { const f = info(c); return `
+  const hl = new Set(ch.filter(c => c.type === 'w' || c.type === 'p' || c.type === 'evo').map(c => c.id));
+  screenEl.innerHTML = `<div class="lvl"><h2>레벨 업! Lv.${G.level - G.pending + 1}</h2>${bagHtml(hl)}<div class="cards">${ch.map((c, i) => { const f = info(c); return `
     <button class="card${f.evo ? ' evo' : ''}" data-i="${i}"><canvas width="96" height="96" data-icon="${f.icon}" data-evo="${f.evo ? 1 : 0}" aria-hidden="true"></canvas><span class="cbody">
       <span class="cn">${f.name}</span><span class="ct${f.evo ? ' evo' : f.isNew ? ' new' : ''}">${f.tag}</span>
       <span class="cd">${f.desc}</span>${f.lvl ? `<span class="pips" aria-label="레벨 ${f.lvl}">${pips(f.lvl)}</span>` : ''}<span class="hint2">${f.hint || evoHint(ch[i])}</span><span class="key">${i + 1}번 키</span></span></button>`; }).join('')}</div></div>`;
@@ -1477,7 +1501,7 @@ function drawHUD(rt){
   X.font = '15px Jua, "Gowun Dodum", sans-serif'; X.textAlign = 'center'; X.textBaseline = 'middle'; X.fillStyle = INK; X.fillText(String(G.level), L + 14, top + 9); X.textAlign = 'left';
   // timer
   const boss = G.boss && !G.boss.dead;
-  hudText(G.time >= BOSS_AT ? '보스!' : fmt(G.time), vw / 2, top + 38, 24, 'center', G.time >= BOSS_AT ? '#ffd166' : '#ffffff');
+  if (state !== 'levelup') hudText(G.time >= BOSS_AT ? '보스!' : fmt(G.time), vw / 2, top + 38, 24, 'center', G.time >= BOSS_AT ? '#ffd166' : '#ffffff');
   if (boss){
     const w = Math.min(320, vw * .46), x = vw / 2 - w / 2, y = top + 56;
     rr(x, y, w, 12, 6); X.fillStyle = 'rgba(58,46,95,.6)'; X.fill(); X.lineWidth = 2.5; X.strokeStyle = INK; X.stroke();
@@ -1578,11 +1602,11 @@ function setScreen(kind){
     screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
       <h2>잠깐 쉬는 중</h2>
       <p class="lead">${G.st.name} · ${fmt(G.time)} · Lv.${G.level} · 쓰러뜨린 적 ${G.kills}</p>
-      <div class="owned">${owned.map(o => `<span>${o}</span>`).join('')}</div>
+      ${bagHtml()}
       ${speedSeg()}
       <div class="row"><button class="big" id="bResume">계속하기</button><button class="big alt" id="bBook">진화 도감</button><button class="big alt" id="bQuit">포기하기</button></div>
     </div></div>`;
-    wireSeg(screenEl);
+    wireSeg(screenEl); paintIcons(screenEl);
     $('bBook').addEventListener('click', () => { bookBack = 'pause'; setScreen('book'); });
     $('bResume').addEventListener('click', () => togglePause());
     const bq = $('bQuit'); let armed = false;
