@@ -216,7 +216,7 @@ const COUPONS = {
   'BANGUL2026':  500,
   'STARCANDY':  1000,
 };
-const T = 32, TAU = Math.PI * 2, INK = '#3a2e5f', CELL = 48, BOSS_AT = 600;
+const T = 32, TAU = Math.PI * 2, INK = '#3a2e5f', CELL = 48, BOSS_AT = 900;
 const $ = id => document.getElementById(id);
 const cv = $('cv');
 let X = cv.getContext('2d');
@@ -250,7 +250,7 @@ const EN = {
   mushroom: { hp:40, spd:32, dmg:14, xp:3, r:12, subj:'버섯이' },
 };
 const WPN = {
-  star:   { name:'별 지팡이', cd:[1,1,1,1,.8], n:[1,2,2,3,4], dmg:[12,12,17,17,20], pierce:[1,1,1,2,2],
+  star:   { name:'별 지팡이', cd:[1,1,1,1,.8], n:[1,2,2,3,4], dmg:[13.2,13.2,18.7,18.7,22], pierce:[1,1,1,2,2],
             desc:['가장 가까운 적에게 별을 쏴요','별을 2개 쏴요','별 공격력 +40%','별 3개, 적을 하나 더 뚫어요','별 4개, 더 자주 쏴요'] },
   petal:  { name:'꽃잎 회오리', n:[2,3,3,4,5], dmg:[9,9,13,13,17], rad:[52,52,60,60,68], spd:[3,3,3.4,3.4,4],
             desc:['꽃잎 2장이 몸 주위를 빙글빙글 돌아요','꽃잎 3장','꽃잎 공격력 +45%, 더 넓게','꽃잎 4장','꽃잎 5장, 더 빠르고 강하게'] },
@@ -278,7 +278,7 @@ const EVO = {
   swing:  { pas:'speed',  name:'회오리 무지개', cd:.8, desc:'온 사방을 한 바퀴 휘둘러 크게 밀쳐내요' },
   acorn:  { pas:'cd',     name:'도토리 소나기', cd:1.0, desc:'커다란 도토리 5개가 쉴 새 없이 터져요' },
   thunder:{ pas:'magnet', name:'연쇄 번개',     cd:1.2, desc:'번개 5줄기가 맞은 적 주변으로 세 번씩 옮겨 붙어요' },
-  aura:   { pas:'hp',     name:'생명의 숲',     desc:'넓은 오라가 적을 태우고 1초마다 체력을 2씩 채워요' },
+  aura:   { pas:'hp',     name:'생명의 숲',     desc:'넓은 오라가 적을 태우고 1초마다 체력을 1.6씩 채워요' },
   boomerang:{ pas:'crit', name:'포춘 쿠키',     cd:.9, desc:'커다란 쿠키 4개가 더 멀리 날아가고 언제나 치명타로 맞혀요' },
   water:  { pas:'regen',  name:'무지개 분수',   cd:2.0, desc:'커다란 무지개 웅덩이 4개가 적을 거의 멈춰 세워요' },
   note:   { pas:'armor',  name:'파도 합주',     cd:1.0, desc:'음표 16개가 파도처럼 물결치며 적을 셋까지 뚫어요' },
@@ -373,6 +373,7 @@ const SPEEDS = [1, 1.5, 2, 3];
 let gameSpeed = load('bangul.sv.speed', 1); if (!SPEEDS.includes(gameSpeed)) gameSpeed = 1;
 const spdLabel = v => v + 'x';
 const evoReady = w => !w.evo && w.lvl >= 5 && (G.passives[EVO[w.id].pas] || 0) >= 1;
+const EVO_POWER = .8; // 진화 무기 위력 배율 (1 = 원래 세기)
 const cdOf = w => w.evo ? EVO[w.id].cd : WPN[w.id].cd[w.lvl - 1];
 
 const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
@@ -582,8 +583,8 @@ function makeEnemy(kind, x, y, opt = {}){
   const d = EN[kind], tm = 1 + G.time / 60 * .32, s = opt.s || 1;
   const hp = opt.hp || d.hp * G.st.hpMul * tm;
   return { kind, x, y, hp, max:hp, s, r:d.r * s, fly:!!d.fly, xp:d.xp,
-    spd: d.spd * .63 * (opt.spdMul || 1) * (1 + Math.min(G.time, 600) / 600 * .25),
-    dmg: Math.round(d.dmg * (1 + Math.min(G.time, 600) / 600 * .6) * (opt.dmgMul || 1)),
+    spd: d.spd * .63 * (opt.spdMul || 1) * (1 + Math.min(G.time, BOSS_AT) / BOSS_AT * .25),
+    dmg: Math.round(d.dmg * (1 + Math.min(G.time, BOSS_AT) / BOSS_AT * .6) * (opt.dmgMul || 1)),
     ph: Math.random() * TAU, z:0, kx:0, ky:0, hurt:0, dead:false, col:G.st.slime, elite:!!opt.elite, boss:!!opt.boss, petalT:0, slowT:0, slowMul:1, walk:0, look:1 };
 }
 function spawnTick(dt){
@@ -595,13 +596,13 @@ function spawnTick(dt){
     G.spawnAcc--;
     if (G.enemies.length < 280){ const [x, y] = spawnPos(); G.enemies.push(makeEnemy(pickKind(), x, y)); }
   }
-  for (const et of [150, 300, 450]) if (t >= et && !G.events['e' + et]){
+  for (const et of [150, 300, 450, 600, 750]) if (t >= et && !G.events['e' + et]){
     G.events['e' + et] = 1;
     const [x, y] = spawnPos();
     G.enemies.push(makeEnemy(G.st.boss, x, y, { s:2, hp:420 * G.st.hpMul * (1 + t / 60 * .32), elite:true, spdMul:.95, dmgMul:1.6 }));
     toast('커다란 ' + EN[G.st.boss].subj + ' 다가와요! 쓰러뜨리면 보물상자');
   }
-  for (const et of [95, 255, 405, 525]) if (t >= et && !G.events['s' + et]){
+  for (const et of [95, 255, 405, 525, 675, 825]) if (t >= et && !G.events['s' + et]){
     G.events['s' + et] = 1;
     const n = 22, R = Math.hypot(vw, vh) / zoom / 2 * .85;
     const sk = G.st.swarm || 'bee';
@@ -611,7 +612,7 @@ function spawnTick(dt){
   if (t >= BOSS_AT && !G.events.boss){
     G.events.boss = 1;
     const [x, y] = spawnPos();
-    G.boss = makeEnemy(G.st.boss, x, y, { s:3.2, hp:6000 * G.st.hpMul, boss:true, spdMul:1.05, dmgMul:2.4 });
+    G.boss = makeEnemy(G.st.boss, x, y, { s:3.2, hp:6000 * 1.3 * G.st.hpMul, boss:true, spdMul:1.05, dmgMul:2.4 });
     G.enemies.push(G.boss); toast(G.st.bossMsg); sfx('warn'); G.shake = .3;
   }
 }
@@ -736,7 +737,7 @@ function updateWeapons(dt){
     if (w.id === 'aura'){
       const A = auraGeo(w);
       w.t -= dt; w.a += dt;
-      if (w.evo && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + 2 * dt);
+      if (w.evo && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + 2 * EVO_POWER * dt);
       if (w.t <= 0){
         w.t = .45;
         query(p.x, p.y, A.rad + 30, e => { if (Math.hypot(e.x - p.x, e.y - p.y) < A.rad + e.r) damage(e, A.dmg, 0, 0, 0); });
@@ -750,17 +751,17 @@ function updateWeapons(dt){
 }
 function petalGeo(w){
   const D = WPN.petal, L = w.lvl - 1;
-  if (w.evo){ const base = 78 * S.area; return { n:8, rad: base * (1 + .32 * Math.sin(G.time * 2.2)), pr:12 * S.area, dmg:24, spd:4.6 }; }
+  if (w.evo){ const base = 78 * S.area; return { n:8, rad: base * (1 + .32 * Math.sin(G.time * 2.2)), pr:12 * S.area, dmg:24 * EVO_POWER, spd:4.6 }; }
   return { n:D.n[L], rad:D.rad[L] * S.area, pr:9 * S.area, dmg:D.dmg[L], spd:D.spd[L] };
 }
 function auraGeo(w){
   const D = WPN.aura, L = w.lvl - 1;
-  return w.evo ? { rad:95 * S.area, dmg:14 } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] };
+  return w.evo ? { rad:95 * S.area, dmg:14 * EVO_POWER } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] };
 }
 function fire(w, D, L){
   const p = G.p, E = !!w.evo;
   if (w.id === 'star'){
-    const n = E ? 6 : D.n[L], dmg = E ? 30 : D.dmg[L], pierce = E ? 3 : D.pierce[L], sp = E ? 390 : 340, r = (E ? 10 : 7) * S.area;
+    const n = E ? 6 : D.n[L], dmg = E ? 30 * EVO_POWER : D.dmg[L], pierce = E ? 3 : D.pierce[L], sp = E ? 390 : 340, r = (E ? 10 : 7) * S.area;
     const tg = nearestEnemies(n, E ? 460 : 380);
     if (!tg.length){ w.t = .25; return; }
     sfx('shoot', 80);
@@ -774,12 +775,12 @@ function fire(w, D, L){
     const base = Math.atan2(p.fy, p.fx), n = E ? 4 : D.n[L];
     for (let i = 0; i < n; i++){
       const a = base + (i - (n - 1) / 2) * (E ? .6 : .38);
-      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125, vy:Math.sin(a) * 125, dmg: E ? 30 : D.dmg[L], life: E ? 3.2 : 2.4,
+      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125, vy:Math.sin(a) * 125, dmg: E ? 30 * EVO_POWER : D.dmg[L], life: E ? 3.2 : 2.4,
         r:(E ? 24 : D.size[L]) * S.area, hit:new Set(), rot:Math.random() * 6, seek:0, rehit:0 });
     }
     sfx('shoot', 80);
   } else if (w.id === 'swing'){
-    const range = (E ? 96 : D.range[L]) * S.area, dmg = E ? 50 : D.dmg[L], base = Math.atan2(p.fy, p.fx);
+    const range = (E ? 96 : D.range[L]) * S.area, dmg = E ? 50 * EVO_POWER : D.dmg[L], base = Math.atan2(p.fy, p.fx);
     if (E){
       G.fx.push({ k:'swing', spin:true, a:base, range, life:.3, max:.3 });
       query(p.x, p.y, range + 30, e => {
@@ -805,13 +806,13 @@ function fire(w, D, L){
       let tx, ty;
       if (cand.length){ const e = cand[(Math.random() * cand.length) | 0]; tx = e.x + (Math.random() - .5) * 20; ty = e.y + (Math.random() - .5) * 20; }
       else { const a = Math.random() * TAU; tx = p.x + Math.cos(a) * 120; ty = p.y + Math.sin(a) * 120; }
-      G.proj.push({ k:'acorn', evo:E, sx:p.x, sy:p.y - 12, tx, ty, x:p.x, y:p.y, t:0, dur:.55, dmg: E ? 55 : D.dmg[L], rad:(E ? 80 : D.rad[L]) * S.area, life:9 });
+      G.proj.push({ k:'acorn', evo:E, sx:p.x, sy:p.y - 12, tx, ty, x:p.x, y:p.y, t:0, dur:.55, dmg: E ? 55 * EVO_POWER : D.dmg[L], rad:(E ? 80 : D.rad[L]) * S.area, life:9 });
     }
   } else if (w.id === 'thunder'){
     const vwW = vw / zoom, vhW = vh / zoom, cam = G.cam;
     const vis = G.enemies.filter(e => !e.dead && e.x > cam.x && e.x < cam.x + vwW && e.y > cam.y && e.y < cam.y + vhW);
     if (!vis.length){ w.t = .3; return; }
-    const n = E ? 5 : D.n[L], dmg = E ? 60 : D.dmg[L];
+    const n = E ? 5 : D.n[L], dmg = E ? 60 * EVO_POWER : D.dmg[L];
     for (let i = 0; i < n && vis.length; i++){
       const e = vis.splice((Math.random() * vis.length) | 0, 1)[0];
       const x = e.x, y = e.y;
@@ -838,7 +839,7 @@ function fire(w, D, L){
     for (let i = 0; i < n; i++){
       const a = tg[i] ? Math.atan2(tg[i].y - p.y, tg[i].x - p.x) : base + (i - (n - 1) / 2) * .5;
       G.proj.push({ k:'boomerang', evo:E, x:p.x, y:p.y - 12, dx:Math.cos(a), dy:Math.sin(a), vx:Math.cos(a) * sp, vy:Math.sin(a) * sp,
-        acc: E ? 470 : 540, dmg: E ? 40 : D.dmg[L], r:(E ? 14 : 9) * S.area, life:3, back:false, hit:new Set(), rot:0 });
+        acc: E ? 470 : 540, dmg: E ? 40 * EVO_POWER : D.dmg[L], r:(E ? 14 : 9) * S.area, life:3, back:false, hit:new Set(), rot:0 });
     }
     sfx('swing', 80);
   } else if (w.id === 'water'){
@@ -847,7 +848,7 @@ function fire(w, D, L){
       let tx, ty;
       if (cand.length){ const e = cand[(Math.random() * cand.length) | 0]; tx = e.x + (Math.random() - .5) * 30; ty = e.y + (Math.random() - .5) * 30; }
       else { const a = Math.random() * TAU; tx = p.x + Math.cos(a) * 110; ty = p.y + Math.sin(a) * 110; }
-      G.proj.push({ k:'puddle', evo:E, x:tx, y:ty, r:(E ? 64 : D.rad[L]) * S.area, life, max:life, tick:0, dmg: E ? 16 : D.dmg[L], slow: E ? .3 : .55 });
+      G.proj.push({ k:'puddle', evo:E, x:tx, y:ty, r:(E ? 64 : D.rad[L]) * S.area, life, max:life, tick:0, dmg: E ? 16 * EVO_POWER : D.dmg[L], slow: E ? .3 : .55 });
       burst(tx, ty - 6, ['#9fe8ff', '#fff'], 6, { speed:70 });
     }
     sfx('splash', 80);
@@ -856,7 +857,7 @@ function fire(w, D, L){
     const cols = ['#ff8fc5', '#6fd0ff', '#ffd166', '#b48cff'];
     for (let i = 0; i < n; i++){
       const a = w.a + i * TAU / n;
-      G.proj.push({ k:'note', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 220, vy:Math.sin(a) * 220, dmg: E ? 26 : D.dmg[L], pierce: E ? 3 : D.pierce[L],
+      G.proj.push({ k:'note', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 220, vy:Math.sin(a) * 220, dmg: E ? 26 * EVO_POWER : D.dmg[L], pierce: E ? 3 : D.pierce[L],
         life: E ? 1.3 : 1.1, r:(E ? 9 : 7) * S.area, hit:new Set(), rot:0, t:0, col:cols[i % 4] });
     }
     sfx('note', 80);
@@ -1797,7 +1798,7 @@ function setScreen(kind){
     screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
       <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn" id="bCoupon">쿠폰 입력</button></div></div>
       <h1>방울섬 <span>서바이벌</span></h1>
-      <p class="lead">몰려오는 섬 친구들을 자동 공격으로 막아내며 10분을 버티고, 마지막에 나타나는 왕을 쓰러뜨리세요. 레벨업마다 무기와 능력을 골라 키워요.</p>
+      <p class="lead">몰려오는 섬 친구들을 자동 공격으로 막아내며 15분을 버티고, 마지막에 나타나는 왕을 쓰러뜨리세요. 레벨업마다 무기와 능력을 골라 키워요.</p>
       <div class="stages" role="radiogroup" aria-label="스테이지">${STAGES.map((s, i) => {
         const lock = !unlocked(i);
         return `<button class="stage${i === selStage ? ' sel' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span>${s.name}</span><span class="ss">${lock ? '잠김' : meta.cleared[i] ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
