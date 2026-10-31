@@ -121,6 +121,7 @@ h2{font-size:clamp(24px,4.4vw,32px)}
 .minibtn.gear svg{width:15px;height:15px}
 .credit{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 8px);font-family:var(--font-display);font-size:13px;color:#fffdf8;text-shadow:0 1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink),0 -1px 0 var(--ink);pointer-events:none;letter-spacing:.03em}
 .setcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.setcol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .setgrp{display:flex;flex-direction:column;gap:8px;border:2.5px solid var(--ink);border-radius:16px;padding:10px 14px;background:#fff}
 .sethead{margin:0;font-family:var(--font-display);font-size:14px;color:var(--pink);letter-spacing:.06em}
 .setrow{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:10px}
@@ -1869,9 +1870,9 @@ function setScreen(kind){
     const st = STAGES[selStage], best = meta.best[st.id];
     const ch = CHARS[selChar];
     screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
-      <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn" id="bCoupon">쿠폰 입력</button><button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
+      <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
       <h1>방울섬 <span>서바이벌</span></h1>
-      <p class="lead">몰려오는 섬 친구들을 자동 공격으로 막아내며 15분을 버티고, 마지막에 나타나는 왕을 쓰러뜨리세요. 레벨업마다 무기와 능력을 골라 키워요.</p>
+      <p class="lead">몰려오는 악당들에게서 15분을 버티고 레벨업마다 무기와 능력을 골라 마지막에 나타나는 왕을 쓰러뜨리세요.</p>
       <div class="stages" role="radiogroup" aria-label="스테이지">${STAGES.map((s, i) => {
         const lock = !unlocked(i);
         return `<button class="stage${i === selStage ? ' sel' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span>${s.name}</span><span class="ss">${lock ? '잠김' : meta.cleared[i] ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
@@ -1884,7 +1885,6 @@ function setScreen(kind){
     $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); });
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
     $('bBook').addEventListener('click', () => { bookBack = 'title'; setScreen('book'); });
-    $('bCoupon').addEventListener('click', () => { couponMsg = null; state = 'coupon'; setScreen('coupon'); });
     $('bSettings').addEventListener('click', () => { settingsBack = 'title'; setScreen('settings'); });
     screenEl.insertAdjacentHTML('beforeend', '<div class="credit">제작자 Leeb</div>');
     paintIcons(screenEl);
@@ -1892,7 +1892,6 @@ function setScreen(kind){
     screenEl.innerHTML = `<div class="panel" style="max-width:860px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
       <p class="lead">한 번 산 강화는 모든 판에 계속 적용돼요.</p>
-      ${couponFormHtml()}
       <div class="shop">${META_DEF.map(m => {
         const mx = m.max || META_MAX, lv = Math.min(meta.up[m.id] || 0, mx), max = lv >= mx, cost = max ? 0 : m.cost[lv];
         return `<div class="srow${max ? ' maxed' : ''}"><canvas width="80" height="80" data-icon="${m.icon}" aria-hidden="true"></canvas>
@@ -1901,7 +1900,6 @@ function setScreen(kind){
       <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
     </div></div>`;
     paintIcons(screenEl);
-    wireCoupon('shop');
     screenEl.querySelectorAll('.buy:not([type="submit"])').forEach(b => b.addEventListener('click', () => {
       const m = META_DEF.find(m => m.id === b.dataset.id), lv = meta.up[m.id];
       if (lv >= (m.max || META_MAX) || meta.coins < m.cost[lv]) return;
@@ -1931,11 +1929,17 @@ function setScreen(kind){
     screenEl.innerHTML = `<div class="panel" style="max-width:780px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>설정</h2><button class="big alt" id="bBack">돌아가기</button></div>
       <div class="setcols">
+      <div class="setcol">
       <div class="setgrp">
         <p class="sethead">소리</p>
         <div class="setrow"><label for="sBgm">배경음</label><input type="range" id="sBgm" min="0" max="100" step="5" value="${settings.bgm}"><output id="oBgm" for="sBgm">${settings.bgm}</output></div>
         <div class="setrow"><label for="sSfx">효과음</label><input type="range" id="sSfx" min="0" max="100" step="5" value="${settings.sfx}"><output id="oSfx" for="sSfx">${settings.sfx}</output></div>
         <div class="setrow"><span class="lab">전체 소리</span><button class="toggle" id="sMute" aria-pressed="${!muted}">${muted ? '꺼짐' : '켜짐'}</button></div>
+      </div>
+      <div class="setgrp">
+        <div class="row" style="justify-content:space-between"><p class="sethead">쿠폰 입력</p>${candyHtml(meta.coins)}</div>
+        ${couponFormHtml()}
+      </div>
       </div>
       <div class="setgrp">
         <p class="sethead">화면</p>
@@ -1966,21 +1970,9 @@ function setScreen(kind){
       settings.view = +b.dataset.view; saveSettings(); resize();
       screenEl.querySelectorAll('.seg button[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
     }));
-    wireSeg(screenEl);
-    $('bBack').addEventListener('click', () => setScreen(settingsBack));
+    wireSeg(screenEl); paintIcons(screenEl); wireCoupon('settings');
+    $('bBack').addEventListener('click', () => { couponMsg = null; setScreen(settingsBack); });
     $('bBack').focus({ preventScroll:true });
-  } else if (kind === 'coupon'){
-    screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
-      <div class="row" style="justify-content:space-between"><h2>쿠폰 입력</h2>${candyHtml(meta.coins)}</div>
-      <p class="lead">받은 쿠폰 코드를 입력하면 별사탕을 받아요. 코드마다 한 번씩만 쓸 수 있어요.</p>
-      ${couponFormHtml()}
-      <div class="row"><button class="big alt" id="bBack">돌아가기</button><button class="big alt" id="bToShop">별사탕 상점</button></div>
-    </div></div>`;
-    paintIcons(screenEl);
-    wireCoupon('coupon');
-    $('bBack').addEventListener('click', () => { couponMsg = null; state = 'title'; setScreen('title'); });
-    $('bToShop').addEventListener('click', () => { couponMsg = null; state = 'shop'; setScreen('shop'); });
-    $('couponInput').focus({ preventScroll:true });
   } else if (kind === 'chars'){
     screenEl.innerHTML = `<div class="panel" style="max-width:920px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>캐릭터 고르기</h2><div class="row" style="gap:12px">${candyHtml(meta.coins)}<button class="big" id="bDone">이 캐릭터로</button></div></div>
