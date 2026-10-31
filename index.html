@@ -102,6 +102,19 @@ h2{font-size:clamp(24px,4.4vw,32px)}
 .big.alt{background:var(--paper);font-size:17px}
 .minibtn{font-family:var(--font-display);font-size:14px;background:var(--mint);color:var(--ink);border:2.5px solid var(--ink);border-radius:999px;box-shadow:0 3px 0 var(--ink);padding:3px 12px;cursor:pointer}
 .minibtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.minibtn.gear{display:inline-flex;align-items:center;gap:4px;background:var(--paper)}
+.minibtn.gear svg{width:15px;height:15px}
+.credit{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 8px);font-family:var(--font-display);font-size:13px;color:#fffdf8;text-shadow:0 1px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink),0 -1px 0 var(--ink);pointer-events:none;letter-spacing:.03em}
+.setcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.setgrp{display:flex;flex-direction:column;gap:8px;border:2.5px solid var(--ink);border-radius:16px;padding:10px 14px;background:#fff}
+.sethead{margin:0;font-family:var(--font-display);font-size:14px;color:var(--pink);letter-spacing:.06em}
+.setrow{display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:10px}
+.setrow label,.setrow .lab{font-family:var(--font-display);font-size:16px}
+.setrow .seg,.setrow .toggle{grid-column:2 / 4;justify-self:start}
+.setrow input[type=range]{width:100%;min-width:0;accent-color:var(--pink);touch-action:auto;height:28px}
+.setrow output{font-family:var(--font-display);font-size:15px;min-width:2.4em;text-align:right;font-variant-numeric:tabular-nums}
+.toggle{font-family:var(--font-display);font-size:15px;border:2.5px solid var(--ink);border-radius:999px;padding:3px 16px;cursor:pointer;color:var(--ink);background:var(--paper);box-shadow:0 3px 0 var(--ink)}
+.toggle[aria-pressed="true"]{background:var(--mint)}
 .big.warn{background:var(--pink)}
 button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 .candy{font-family:var(--font-display);font-size:16px;display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
@@ -196,9 +209,9 @@ body.touch .card .key{display:none}
   <div id="screen" class="screen" hidden></div>
   <div id="rotate" class="screen" hidden>
     <div class="panel narrow"><div class="txt">
-      <h2>휴대폰을 가로로 돌려 주세요</h2>
-      <p class="lead">가로 화면에서 더 넓게 보이고, 두 손으로 편하게 할 수 있어요.</p>
-      <div class="row"><button class="big alt" id="bPortrait">세로로 그냥 할게요</button></div>
+      <h2 id="rotTitle">휴대폰을 가로로 돌려 주세요</h2>
+      <p class="lead" id="rotLead">가로 모드로 설정되어 있어요. 화면 방향은 설정에서 바꿀 수 있어요.</p>
+      <div class="row"><button class="big alt" id="bPortrait">이대로 할게요</button></div>
     </div></div>
   </div>
 </div>
@@ -326,6 +339,10 @@ const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, msp
   cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [] };
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
+const settings = Object.assign({ bgm:70, sfx:80, view:1, orient:'landscape' }, load('bangul.sv.settings', {}) || {});
+const saveSettings = () => save('bangul.sv.settings', settings);
+const ORIENTS = [{ v:'auto', label:'자동' }, { v:'landscape', label:'가로' }, { v:'portrait', label:'세로' }];
+const VIEWS = [{ v:.8, label:'넓게' }, { v:1, label:'기본' }, { v:1.2, label:'크게' }];
 let selStage = Math.min(load('bangul.sv.stage', 0), STAGES.length - 1);
 let selChar = Math.max(0, CHARS.findIndex(c => c.id === load('bangul.sv.char', 'bangul')));
 const unlocked = i => i === 0 || meta.cleared[i - 1];
@@ -413,17 +430,33 @@ function newRun(stage){
 /* ---------- audio ---------- */
 let ac = null, master = null;
 function ensureAudio(){
-  if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .9; master.connect(ac.destination); } catch(e){ ac = null; } }
+  if (!ac){
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = .9; master.connect(ac.destination);
+      musicBus = ac.createGain(); musicBus.connect(master);
+      sfxBus = ac.createGain(); sfxBus.connect(master);
+      applyAudio();
+    } catch(e){ ac = null; }
+  }
   if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
 }
+let musicBus = null, sfxBus = null;
+function applyAudio(){
+  if (!ac) return;
+  const curve = v => Math.pow(Math.max(0, Math.min(100, v)) / 100, 1.6) * 1.4;
+  musicBus.gain.value = curve(settings.bgm);
+  sfxBus.gain.value = curve(settings.sfx);
+}
 const midi = n => 440 * 2 ** ((n - 69) / 12);
-function tone(f, f2, dur, type, vol, delay = 0){
+function tone(f, f2, dur, type, vol, delay = 0, bus = 'sfx'){
   if (!ac || muted) return;
+  if ((bus === 'music' ? settings.bgm : settings.sfx) <= 0) return;
   const t0 = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t0);
   if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
   g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .012); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
-  o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .03);
+  o.connect(g); g.connect(bus === 'music' ? musicBus : sfxBus); o.start(t0); o.stop(t0 + dur + .03);
 }
 const lastSfx = {};
 function sfx(n, gap = 0){
@@ -457,8 +490,8 @@ let step = 0;
 setInterval(() => {
   if (!ac || muted || state !== 'play') return;
   const boss = G && G.boss && !G.boss.dead;
-  const n = MEL[step % MEL.length]; if (n) tone(midi(n - (boss ? 3 : 0)), 0, .22, 'triangle', .03);
-  if (step % 4 === 0) tone(midi(BASS[(step / 4 | 0) % BASS.length] - (boss ? 3 : 0)), 0, .55, 'sine', .045);
+  const n = MEL[step % MEL.length]; if (n) tone(midi(n - (boss ? 3 : 0)), 0, .22, 'triangle', .03, 0, 'music');
+  if (step % 4 === 0) tone(midi(BASS[(step / 4 | 0) % BASS.length] - (boss ? 3 : 0)), 0, .55, 'sine', .045, 0, 'music');
   step++;
 }, 220);
 
@@ -1727,9 +1760,10 @@ function drawHUD(rt){
   X.font = '15px Jua, "Gowun Dodum", sans-serif'; X.textAlign = 'center'; X.textBaseline = 'middle'; X.fillStyle = INK; X.fillText(String(G.level), L + 14, top + 9); X.textAlign = 'left';
   // timer
   const boss = G.boss && !G.boss.dead;
-  if (state !== 'levelup') hudText(G.time >= BOSS_AT ? '보스!' : fmt(G.time), vw / 2, top + 38, 24, 'center', G.time >= BOSS_AT ? '#ffd166' : '#ffffff');
+  const tY = vw < 560 ? top + 116 : top + 38;
+  if (state !== 'levelup') hudText(G.time >= BOSS_AT ? '보스!' : fmt(G.time), vw / 2, tY, 24, 'center', G.time >= BOSS_AT ? '#ffd166' : '#ffffff');
   if (boss){
-    const w = Math.min(320, vw * .46), x = vw / 2 - w / 2, y = top + 56;
+    const w = Math.min(320, vw * .62), x = vw / 2 - w / 2, y = tY + 18;
     rr(x, y, w, 12, 6); X.fillStyle = 'rgba(58,46,95,.6)'; X.fill(); X.lineWidth = 2.5; X.strokeStyle = INK; X.stroke();
     const hk = Math.max(0, G.boss.hp / G.boss.max); if (hk > 0){ rr(x + 2, y + 2, (w - 4) * hk, 8, 4); X.fillStyle = '#ff5d7a'; X.fill(); }
   }
@@ -1784,7 +1818,8 @@ function drawHUD(rt){
 
 /* ---------- screens ---------- */
 const screenEl = $('screen');
-let heroCv = null, bookBack = 'title';
+let heroCv = null, bookBack = 'title', settingsBack = 'title';
+const GEAR = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M11.3 1.5l.4 2.1a6.6 6.6 0 0 1 1.6.9l2-.8 1.3 2.3-1.6 1.4a6.7 6.7 0 0 1 0 1.8l1.6 1.4-1.3 2.3-2-.8a6.6 6.6 0 0 1-1.6.9l-.4 2.1H8.7l-.4-2.1a6.6 6.6 0 0 1-1.6-.9l-2 .8-1.3-2.3L5 10.1a6.7 6.7 0 0 1 0-1.8L3.4 6.9l1.3-2.3 2 .8a6.6 6.6 0 0 1 1.6-.9l.4-2.1h2.6zM10 6.8a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/></svg>';
 const pips = (l, max = 5) => '●'.repeat(l) + '○'.repeat(max - l);
 const candyHtml = n => `<span class="candy"><canvas width="44" height="44" data-icon="candy" aria-hidden="true"></canvas>${n}</span>`;
 function setScreen(kind){
@@ -1796,7 +1831,7 @@ function setScreen(kind){
     const st = STAGES[selStage], best = meta.best[st.id];
     const ch = CHARS[selChar];
     screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
-      <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn" id="bCoupon">쿠폰 입력</button></div></div>
+      <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn" id="bCoupon">쿠폰 입력</button><button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
       <h1>방울섬 <span>서바이벌</span></h1>
       <p class="lead">몰려오는 섬 친구들을 자동 공격으로 막아내며 15분을 버티고, 마지막에 나타나는 왕을 쓰러뜨리세요. 레벨업마다 무기와 능력을 골라 키워요.</p>
       <div class="stages" role="radiogroup" aria-label="스테이지">${STAGES.map((s, i) => {
@@ -1812,6 +1847,8 @@ function setScreen(kind){
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
     $('bBook').addEventListener('click', () => { bookBack = 'title'; setScreen('book'); });
     $('bCoupon').addEventListener('click', () => { couponMsg = null; state = 'coupon'; setScreen('coupon'); });
+    $('bSettings').addEventListener('click', () => { settingsBack = 'title'; setScreen('settings'); });
+    screenEl.insertAdjacentHTML('beforeend', '<div class="credit">제작자 Leeb</div>');
     paintIcons(screenEl);
   } else if (kind === 'shop'){
     screenEl.innerHTML = `<div class="panel" style="max-width:860px"><div class="txt">
@@ -1839,10 +1876,10 @@ function setScreen(kind){
       <h2>잠깐 쉬는 중</h2>
       <p class="lead">${G.st.name} · ${fmt(G.time)} · Lv.${G.level} · 쓰러뜨린 적 ${G.kills}</p>
       ${bagHtml()}
-      ${speedSeg()}
-      <div class="row"><button class="big" id="bResume">계속하기</button><button class="big alt" id="bBook">진화 도감</button><button class="big alt" id="bQuit">포기하기</button></div>
+      <div class="row"><button class="big" id="bResume">계속하기</button><button class="big alt" id="bSet2">설정</button><button class="big alt" id="bBook">진화 도감</button><button class="big alt" id="bQuit">포기하기</button></div>
     </div></div>`;
-    wireSeg(screenEl); paintIcons(screenEl);
+    paintIcons(screenEl);
+    $('bSet2').addEventListener('click', () => { settingsBack = 'pause'; setScreen('settings'); });
     $('bBook').addEventListener('click', () => { bookBack = 'pause'; setScreen('book'); });
     $('bResume').addEventListener('click', () => togglePause());
     const bq = $('bQuit'); let armed = false;
@@ -1851,6 +1888,49 @@ function setScreen(kind){
       showResult(false);
     });
     $('bResume').focus({ preventScroll:true });
+  } else if (kind === 'settings'){
+    const vIdx = Math.max(0, VIEWS.findIndex(o => o.v === settings.view));
+    screenEl.innerHTML = `<div class="panel" style="max-width:780px"><div class="txt">
+      <div class="row" style="justify-content:space-between"><h2>설정</h2><button class="big alt" id="bBack">돌아가기</button></div>
+      <div class="setcols">
+      <div class="setgrp">
+        <p class="sethead">소리</p>
+        <div class="setrow"><label for="sBgm">배경음</label><input type="range" id="sBgm" min="0" max="100" step="5" value="${settings.bgm}"><output id="oBgm" for="sBgm">${settings.bgm}</output></div>
+        <div class="setrow"><label for="sSfx">효과음</label><input type="range" id="sSfx" min="0" max="100" step="5" value="${settings.sfx}"><output id="oSfx" for="sSfx">${settings.sfx}</output></div>
+        <div class="setrow"><span class="lab">전체 소리</span><button class="toggle" id="sMute" aria-pressed="${!muted}">${muted ? '꺼짐' : '켜짐'}</button></div>
+      </div>
+      <div class="setgrp">
+        <p class="sethead">화면</p>
+        <div class="setrow"><span class="lab">화면 비율</span><div class="seg" role="group" aria-label="화면 비율">${VIEWS.map((o, i) => `<button data-view="${o.v}" aria-pressed="${i === vIdx}">${o.label}</button>`).join('')}</div></div>
+        <p class="hint">넓게는 더 멀리까지 보이고, 크게는 캐릭터와 적이 크게 보여요.</p>
+        <div class="setrow"><span class="lab">화면 방향</span><div class="seg" role="group" aria-label="화면 방향">${ORIENTS.map(o => `<button data-orient="${o.v}" aria-pressed="${o.v === settings.orient}">${o.label}</button>`).join('')}</div></div>
+        <p class="hint">휴대폰의 '화면 방향 잠금'이 켜져 있으면 돌아가지 않아요. 제어 센터에서 꺼 주세요.</p>
+        <div class="setrow"><span class="lab">게임 속도</span><div class="seg" role="group" aria-label="게임 속도">${SPEEDS.map(v => `<button data-spd="${v}" aria-pressed="${v === gameSpeed}">${spdLabel(v)}</button>`).join('')}</div></div>
+      </div>
+      </div>
+    </div></div>`;
+    const bind = (id, out, key, test) => {
+      const el = $(id);
+      el.addEventListener('input', () => { settings[key] = +el.value; $(out).textContent = el.value; ensureAudio(); applyAudio(); saveSettings(); });
+      el.addEventListener('change', test);
+    };
+    bind('sBgm', 'oBgm', 'bgm', () => { tone(midi(72), 0, .3, 'triangle', .05, 0, 'music'); tone(midi(76), 0, .3, 'triangle', .05, .15, 'music'); });
+    bind('sSfx', 'oSfx', 'sfx', () => sfx('gem'));
+    $('sMute').addEventListener('click', () => {
+      muted = !muted; save('bangul.muted', muted); paintSound(); ensureAudio();
+      const b = $('sMute'); b.textContent = muted ? '꺼짐' : '켜짐'; b.setAttribute('aria-pressed', String(!muted));
+    });
+    screenEl.querySelectorAll('.seg button[data-orient]').forEach(b => b.addEventListener('click', () => {
+      settings.orient = b.dataset.orient; saveSettings(); applyOrientation();
+      screenEl.querySelectorAll('.seg button[data-orient]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    }));
+    screenEl.querySelectorAll('.seg button[data-view]').forEach(b => b.addEventListener('click', () => {
+      settings.view = +b.dataset.view; saveSettings(); resize();
+      screenEl.querySelectorAll('.seg button[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    }));
+    wireSeg(screenEl);
+    $('bBack').addEventListener('click', () => setScreen(settingsBack));
+    $('bBack').focus({ preventScroll:true });
   } else if (kind === 'coupon'){
     screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>쿠폰 입력</h2>${candyHtml(meta.coins)}</div>
@@ -1973,18 +2053,38 @@ function readSafe(){
   safe.t = parseFloat(cs.paddingTop) || 0; safe.r = parseFloat(cs.paddingRight) || 0;
   safe.b = parseFloat(cs.paddingBottom) || 0; safe.l = parseFloat(cs.paddingLeft) || 0;
 }
-function checkRotate(){ const coarse = matchMedia('(pointer: coarse)').matches; $('rotate').hidden = !(coarse && innerHeight > innerWidth && !rotateDismissed); }
+function checkRotate(){
+  const coarse = matchMedia('(pointer: coarse)').matches, portrait = innerHeight > innerWidth, o = settings.orient;
+  const wrong = (o === 'landscape' && portrait) || (o === 'portrait' && !portrait);
+  const show = coarse && wrong && !rotateDismissed;
+  if (show){
+    const land = o === 'landscape';
+    $('rotTitle').textContent = land ? '휴대폰을 가로로 돌려 주세요' : '휴대폰을 세로로 돌려 주세요';
+    $('rotLead').textContent = (land ? '가로 모드' : '세로 모드') + '로 설정되어 있어요. 화면 방향은 설정에서 바꿀 수 있어요.';
+  }
+  $('rotate').hidden = !show;
+}
+function applyOrientation(){
+  try {
+    const so = screen.orientation;
+    if (so){
+      if (settings.orient === 'auto'){ if (so.unlock) so.unlock(); }
+      else if (so.lock) so.lock(settings.orient).catch(() => {});
+    }
+  } catch(e){}
+  rotateDismissed = false; checkRotate();
+}
 function resize(){
   dpr = Math.min(2, window.devicePixelRatio || 1);
   vw = innerWidth; vh = innerHeight;
   cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
-  zoom = Math.max(.85, Math.min(2.2, Math.min(vh / (T * 12.5), vw / (T * 14))));
+  zoom = Math.max(.6, Math.min(2.6, Math.max(.85, Math.min(2.2, Math.min(vh / (T * 12.5), vw / (T * 14)))) * (settings.view || 1)));
   readSafe(); checkRotate();
 }
 addEventListener('resize', resize);
 
 function start(){
-  resize();
+  resize(); applyOrientation();
   state = 'title'; setScreen('title');
   requestAnimationFrame(frame);
 }
@@ -1993,9 +2093,9 @@ if (hot && hot.ready) hot.ready(start); else start();
 })();
 </script>
 
+
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
-try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
 </script>
 </body>
 </html>
