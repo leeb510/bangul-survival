@@ -74,6 +74,21 @@ body.menu #pad,body.menu #topBtns{display:none}
 .panel{background:var(--paper);border:3px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:18px 22px;max-width:640px;width:100%;box-sizing:border-box;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .panel.narrow{max-width:460px}
 .art{flex:0 0 auto;width:120px;height:120px;max-width:100%;border-radius:50%;background:#b8ecf7;border:3px solid var(--ink)}
+.charbtn{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;cursor:pointer;color:var(--ink)}
+.charbtn .cname{font-family:var(--font-display);font-size:18px}
+.charbtn small,.chcard small{font-family:var(--font-body);font-size:12px;color:var(--soft)}
+.charbtn .chg{font-family:var(--font-display);font-size:13px;background:var(--mint);border:2px solid var(--ink);border-radius:999px;padding:1px 10px;box-shadow:0 2px 0 var(--ink)}
+.charbtn:active .art{transform:scale(.97)}
+.chars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.chars{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chcard{background:#fff;border:3px solid var(--ink);border-radius:18px;box-shadow:0 4px 0 var(--ink);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:var(--ink);font-family:var(--font-body);min-width:0}
+.chcard.sel{background:#fff3c4;outline:3px solid var(--pink);outline-offset:2px}
+.chpic{width:64px;height:64px;border-radius:50%;border:2.5px solid var(--ink)}
+.chn{font-family:var(--font-display);font-size:18px}
+.chw{display:flex;align-items:center;gap:3px;font-size:12px}
+.chw canvas{width:22px;height:22px}
+.cht{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px;line-height:1.35;text-align:center}
+.cht .neg{color:#c2416f}
 .txt{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:10px}
 .eyebrow{margin:0;font-family:var(--font-display);font-size:13px;letter-spacing:.08em;color:var(--pink)}
 h1,h2{font-family:var(--font-display);font-weight:400;margin:0;line-height:1.08;text-wrap:balance}
@@ -239,6 +254,16 @@ const PAS = {
   armor:  { name:'소라 껍데기', desc:'받는 피해 -8%' },
   regen:  { name:'아침 이슬', desc:'1초마다 체력 0.4 회복' },
 };
+const CHARS = [
+  { id:'bangul', name:'방울', body:'#5ad6b8', belly:'#8fe8d2', foot:'#3aa98c', hat:'sprout', start:'star',
+    mods:{ xp:.1 }, role:'균형형', traits:['경험치 +10%'] },
+  { id:'kkot', name:'꽃님', body:'#ff9fc8', belly:'#ffc9df', foot:'#e2769f', hat:'flower', start:'petal',
+    mods:{ area:.15, magnet:.3 }, role:'범위형', traits:['공격 범위 +15%', '줍는 범위 +30%'] },
+  { id:'jjirit', name:'찌릿', body:'#ffd166', belly:'#ffe9a8', foot:'#d9a03a', hat:'cloud', start:'thunder',
+    mods:{ cd:.12, speed:.1, hp:-.2 }, role:'속도형', traits:['쿨타임 -12%', '이동 속도 +10%', '최대 체력 -20%'] },
+  { id:'doto', name:'도토', body:'#eaa56c', belly:'#f7d2a6', foot:'#b8763f', hat:'acorn', start:'acorn',
+    mods:{ hp:.4, armor:.1, speed:-.08 }, role:'튼튼형', traits:['최대 체력 +40%', '받는 피해 -10%', '이동 속도 -8%'] },
+];
 const META_DEF = [
   { id:'mhp',  icon:'hp',     name:'튼튼한 몸', per:'최대 체력 +10', cost:[15,30,55,90,140] },
   { id:'mpow', icon:'power',  name:'힘센 방울', per:'공격력 +5%', cost:[20,40,70,110,160] },
@@ -256,6 +281,7 @@ const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, msp
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
 let selStage = Math.min(load('bangul.sv.stage', 0), 2);
+let selChar = Math.max(0, CHARS.findIndex(c => c.id === load('bangul.sv.char', 'bangul')));
 const unlocked = i => i === 0 || meta.cleared[i - 1];
 if (!unlocked(selStage)) selStage = 0;
 
@@ -283,25 +309,26 @@ function vnoise(x, y){
 const needFor = l => Math.floor(5 + (l - 1) * 5 + Math.pow(l - 1, 2) * .45);
 
 function recalc(){
-  const pv = k => G.passives[k] || 0, m = k => meta.up[k] || 0;
+  const pv = k => G.passives[k] || 0, m = k => meta.up[k] || 0, C = G.ch.mods;
   S.power = (1 + .1 * pv('power')) * (1 + .05 * m('mpow'));
-  S.cd = Math.max(.5, 1 - .08 * pv('cd'));
-  S.area = 1 + .1 * pv('area');
-  S.speed = (1 + .1 * pv('speed')) * (1 + .04 * m('mspd'));
-  S.magnet = 80 * (1 + .35 * pv('magnet')) * (1 + .1 * m('mmag'));
-  S.xp = 1 + .06 * m('mxp');
+  S.cd = Math.max(.45, 1 - .08 * pv('cd') - (C.cd || 0));
+  S.area = 1 + .1 * pv('area') + (C.area || 0);
+  S.speed = (1 + .1 * pv('speed')) * (1 + .04 * m('mspd')) * (1 + (C.speed || 0));
+  S.magnet = 80 * (1 + .35 * pv('magnet')) * (1 + .1 * m('mmag')) * (1 + (C.magnet || 0));
+  S.xp = 1 + .06 * m('mxp') + (C.xp || 0);
   S.crit = .08 * pv('crit');
-  S.armor = .08 * pv('armor');
+  S.armor = Math.min(.7, .08 * pv('armor') + (C.armor || 0));
   S.regen = .4 * pv('regen');
   const old = G.p.maxHp;
-  G.p.maxHp = Math.round((100 + 10 * m('mhp')) * (1 + .2 * pv('hp')));
+  G.p.maxHp = Math.round((100 + 10 * m('mhp')) * (1 + .2 * pv('hp')) * (1 + (C.hp || 0)));
   if (old) G.p.hp += Math.max(0, G.p.maxHp - old);
 }
 const newWeapon = id => ({ id, lvl:1, t:.4, a:0 });
 function newRun(stage){
-  G = { stage, st:STAGES[stage], time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
+  const ch = CHARS[selChar];
+  G = { stage, st:STAGES[stage], ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
     p:{ x:0, y:0, fx:1, fy:0, hp:0, maxHp:0, inv:0, dashT:0, dashCd:0, walk:0, moving:false },
-    enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon('star')], passives:{},
+    enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon(ch.start)], passives:{},
     spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
   recalc(); G.p.hp = G.p.maxHp;
   snapCam();
@@ -479,7 +506,7 @@ function makeEnemy(kind, x, y, opt = {}){
   const d = EN[kind], tm = 1 + G.time / 60 * .32, s = opt.s || 1;
   const hp = opt.hp || d.hp * G.st.hpMul * tm;
   return { kind, x, y, hp, max:hp, s, r:d.r * s, fly:!!d.fly, xp:d.xp,
-    spd: d.spd * .9 * (opt.spdMul || 1) * (1 + Math.min(G.time, 600) / 600 * .25),
+    spd: d.spd * .63 * (opt.spdMul || 1) * (1 + Math.min(G.time, 600) / 600 * .25),
     dmg: Math.round(d.dmg * (1 + Math.min(G.time, 600) / 600 * .6) * (opt.dmgMul || 1)),
     ph: Math.random() * TAU, z:0, kx:0, ky:0, hurt:0, dead:false, col:G.st.slime, elite:!!opt.elite, boss:!!opt.boss, petalT:0, slowT:0, slowMul:1, walk:0, look:1 };
 }
@@ -1154,21 +1181,46 @@ function paintIcons(root){
 }
 
 /* ---------- sprites (local coords, feet at 0,0) ---------- */
-function drawBangul(x, y, fx, fy, walk, moving, t){
+function drawHat(kind){
+  X.lineCap = 'round';
+  if (kind === 'sprout'){
+    X.strokeStyle = INK; X.lineWidth = 2;
+    X.beginPath(); X.moveTo(0, -11); X.quadraticCurveTo(.5, -15, 2, -17.5); X.stroke();
+    ell(-1.5, -18.5, 4.4, 2.4, -.5); fs('#8adb5a', 1.6);
+    ell(5.8, -19.5, 4.4, 2.4, .45); fs('#8adb5a', 1.6);
+  } else if (kind === 'flower'){
+    X.strokeStyle = INK; X.lineWidth = 2; X.beginPath(); X.moveTo(0, -11); X.lineTo(1, -15); X.stroke();
+    ell(-4, -13.5, 3.6, 1.9, -.4); fs('#8adb5a', 1.4);
+    for (let k = 0; k < 5; k++){ const a = k / 5 * TAU - Math.PI / 2; ell(1 + Math.cos(a) * 3.8, -18.5 + Math.sin(a) * 3.8, 2.9, 2.9); fs('#ffffff', 1.4); }
+    ell(1, -18.5, 2.3, 2.3); fs('#ffd166', 1.4);
+  } else if (kind === 'cloud'){
+    X.beginPath(); X.moveTo(1.5, -19); X.lineTo(-2.5, -24.5); X.lineTo(.5, -24.5); X.lineTo(-1.5, -30); X.lineTo(5, -23); X.lineTo(2, -23); X.lineTo(5, -19); X.closePath(); fs('#6fd0ff', 1.4);
+    blobs([[-4.5, -13.5, 4.2], [1, -15.5, 5.2], [6.5, -13.5, 3.8]], '#ffffff', 1.8);
+  } else if (kind === 'acorn'){
+    const cap = () => { X.beginPath(); X.moveTo(-12.6, -4); X.bezierCurveTo(-13, -17.5, 13, -17.5, 12.6, -4); X.quadraticCurveTo(0, -8.5, -12.6, -4); X.closePath(); };
+    X.save();
+    cap(); X.fillStyle = '#8a5a3b'; X.fill();
+    X.save(); X.clip(); X.strokeStyle = 'rgba(255,230,190,.35)'; X.lineWidth = 1.2;
+    for (let i = -16; i <= 16; i += 4.5){ X.beginPath(); X.moveTo(i, -18); X.lineTo(i + 10, -2); X.moveTo(i + 10, -18); X.lineTo(i, -2); X.stroke(); }
+    X.restore();
+    cap(); X.lineWidth = 2.2; X.strokeStyle = INK; X.lineJoin = 'round'; X.stroke();
+    X.restore();
+    X.strokeStyle = INK; X.lineWidth = 3; X.beginPath(); X.moveTo(0, -13.5); X.lineTo(2.5, -18); X.stroke();
+  }
+}
+function drawBangul(x, y, fx, fy, walk, moving, t, ch = CHARS[0]){
   const bob = moving ? Math.abs(Math.sin(walk * 13)) * 2.4 : Math.sin(t * 3) * .7;
   const sq = moving ? Math.sin(walk * 26) * .05 : Math.sin(t * 3) * .03;
   const fo = moving ? Math.sin(walk * 13) * 2.6 : 0;
   X.save(); X.translate(x, y);
-  ell(-5, -2 - Math.max(0, fo), 4.2, 3); fs('#3aa98c', 1.8);
-  ell(5, -2 - Math.max(0, -fo), 4.2, 3); fs('#3aa98c', 1.8);
+  ell(-5, -2 - Math.max(0, fo), 4.2, 3); fs(ch.foot, 1.8);
+  ell(5, -2 - Math.max(0, -fo), 4.2, 3); fs(ch.foot, 1.8);
   X.translate(0, -13 - bob);
-  ell(0, 0, 12.5 * (1 + sq), 11.8 * (1 - sq)); fs('#5ad6b8', 2.4);
-  ell(0, 5, 7.5, 4); X.fillStyle = '#8fe8d2'; X.fill();
+  ell(0, 0, 12.5 * (1 + sq), 11.8 * (1 - sq)); fs(ch.body, 2.4);
+  ell(0, 5, 7.5, 4); X.fillStyle = ch.belly; X.fill();
   ell(-4.5, -4.5, 4.5, 3, -.5); X.fillStyle = 'rgba(255,255,255,.6)'; X.fill();
-  X.strokeStyle = INK; X.lineWidth = 2; X.lineCap = 'round';
-  X.beginPath(); X.moveTo(0, -11); X.quadraticCurveTo(.5, -15, 2, -17.5); X.stroke();
-  ell(-1.5, -18.5, 4.4, 2.4, -.5); fs('#8adb5a', 1.6);
-  ell(5.8, -19.5, 4.4, 2.4, .45); fs('#8adb5a', 1.6);
+  drawHat(ch.hat);
+  X.lineCap = 'round';
   if (fy > -.75){
     const ex = fx * 3.4, ey = Math.max(0, fy) * 1.6, blink = (t % 3.4) < .12;
     X.fillStyle = INK;
@@ -1369,7 +1421,7 @@ function render(rt){
     else if (type === 1) drawItem(o, rt);
     else {
       if (p.inv > 0 && Math.floor(rt * 18) % 2) X.globalAlpha = .45;
-      drawBangul(p.x, p.y, p.fx, p.fy, p.walk, p.moving, rt);
+      drawBangul(p.x, p.y, p.fx, p.fy, p.walk, p.moving, rt, G.ch);
       X.globalAlpha = 1;
       rr(p.x - 16, p.y + 5, 32, 6, 3); X.fillStyle = 'rgba(58,46,95,.55)'; X.fill();
       const hw = 30 * Math.max(0, p.hp / p.maxHp);
@@ -1563,7 +1615,8 @@ function setScreen(kind){
   screenEl.hidden = false;
   if (kind === 'title'){
     const st = STAGES[selStage], best = meta.best[st.id];
-    screenEl.innerHTML = `<div class="panel"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><div class="txt">
+    const ch = CHARS[selChar];
+    screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
       <p class="eyebrow">로그라이크 서바이벌</p>
       <h1>방울섬 <span>서바이벌</span></h1>
       <p class="lead">몰려오는 섬 친구들을 자동 공격으로 막아내며 10분을 버티고, 마지막에 나타나는 왕을 쓰러뜨리세요. 레벨업마다 무기와 능력을 골라 키워요.</p>
@@ -1574,6 +1627,7 @@ function setScreen(kind){
       <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">진화 도감</button>${candyHtml(meta.coins)}</div>
     </div></div>`;
     heroCv = $('heroCv');
+    $('bChar').addEventListener('click', () => setScreen('chars'));
     screenEl.querySelectorAll('.stage').forEach(b => b.addEventListener('click', () => { selStage = +b.dataset.i; save('bangul.sv.stage', selStage); setScreen('title'); }));
     $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); });
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
@@ -1615,6 +1669,33 @@ function setScreen(kind){
       showResult(false);
     });
     $('bResume').focus({ preventScroll:true });
+  } else if (kind === 'chars'){
+    screenEl.innerHTML = `<div class="panel" style="max-width:820px"><div class="txt">
+      <div class="row" style="justify-content:space-between"><h2>캐릭터 고르기</h2><button class="big" id="bDone">이 캐릭터로</button></div>
+      <div class="chars" role="radiogroup" aria-label="캐릭터">${CHARS.map((c, i) => `
+        <button class="chcard${i === selChar ? ' sel' : ''}" data-i="${i}" role="radio" aria-checked="${i === selChar}">
+          <canvas class="chpic" width="128" height="128" data-ch="${i}" aria-hidden="true"></canvas>
+          <span class="chn">${c.name} <small>${c.role}</small></span>
+          <span class="chw"><canvas width="44" height="44" data-icon="${c.start}" aria-hidden="true"></canvas>${WPN[c.start].name}로 시작</span>
+          <span class="cht">${c.traits.map(t => `<span class="${/-[0-9]/.test(t) && /체력|속도/.test(t) ? 'neg' : ''}">${t}</span>`).join('')}</span>
+        </button>`).join('')}</div>
+    </div></div>`;
+    paintIcons(screenEl);
+    screenEl.querySelectorAll('canvas[data-ch]').forEach(c => {
+      const prev = X; X = c.getContext('2d'); const ch = CHARS[+c.dataset.ch];
+      X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, 128, 128);
+      X.fillStyle = '#b8ecf7'; X.beginPath(); X.arc(64, 64, 62, 0, TAU); X.fill();
+      X.fillStyle = STAGES[selStage].ground; X.beginPath(); X.ellipse(64, 112, 70, 26, 0, 0, TAU); X.fill();
+      X.setTransform(2.6, 0, 0, 2.6, 64, 100);
+      X.fillStyle = 'rgba(58,46,95,.18)'; ell(0, 0, 11, 4); X.fill();
+      drawBangul(0, 0, 0, .5, 0, false, 1, ch);
+      X = prev;
+    });
+    screenEl.querySelectorAll('.chcard').forEach(b => b.addEventListener('click', () => {
+      selChar = +b.dataset.i; save('bangul.sv.char', CHARS[selChar].id); ensureAudio(); sfx('buy'); setScreen('chars');
+    }));
+    $('bDone').addEventListener('click', () => setScreen('title'));
+    const sel = screenEl.querySelector('.chcard.sel'); if (sel) sel.focus({ preventScroll:true });
   } else if (kind === 'book'){
     const inRun = bookBack === 'pause' && G;
     screenEl.innerHTML = `<div class="panel" style="max-width:820px"><div class="txt">
@@ -1656,15 +1737,15 @@ function drawHero(rt){
   X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, heroCv.width, heroCv.height);
   X.fillStyle = STAGES[selStage].ground; X.beginPath(); X.ellipse(120, 205, 140, 56, 0, 0, TAU); X.fill();
   X.setTransform(1, 0, 0, 1, 0, 0);
-  // orbiting petals for flavour
+  const ch = CHARS[selChar];
+  // the character's starting weapon orbits around it
   for (let i = 0; i < 3; i++){
-    const a = rt * 1.6 + i * TAU / 3;
-    X.save(); X.translate(120 + Math.cos(a) * 78, 140 + Math.sin(a) * 34); X.scale(2, 2); X.rotate(a * 2);
-    ell(0, -4, 3.6, 6); fs('#ff9fc8', 1.4); X.restore();
+    const a = rt * 1.3 + i * TAU / 3;
+    drawIcon(ch.start, 120 + Math.cos(a) * 84, 132 + Math.sin(a) * 36, .7);
   }
-  X.setTransform(4, 0, 0, 4, 120, 182);
+  X.setTransform(4, 0, 0, 4, 120, 186);
   X.fillStyle = 'rgba(58,46,95,.18)'; ell(0, 0, 11, 4); X.fill();
-  drawBangul(0, 0, Math.sin(rt * .8) * .6, .5, rt * .5, false, rt);
+  drawBangul(0, 0, Math.sin(rt * .8) * .6, .5, rt * .5, false, rt, ch);
   X = prev;
 }
 
