@@ -136,8 +136,9 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 .candy{font-family:var(--font-display);font-size:16px;display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
 .candy canvas{width:22px;height:22px}
 
-.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-@media (max-width:560px){.stages{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.stages{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x proximity;touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.stages .stage{flex:0 0 96px;scroll-snap-align:start}
+.stage .sn{font-size:11px;color:var(--soft);font-family:var(--font-body)}
 .stage{font-family:var(--font-display);font-size:15px;white-space:nowrap;color:var(--ink);background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:6px 6px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .stage .sw{width:100%;height:10px;border-radius:6px;border:2px solid var(--ink);box-sizing:border-box}
 .stage .ss{font-family:var(--font-body);font-size:12px;color:var(--soft)}
@@ -276,6 +277,22 @@ const STAGES = [
   { id:'night', name:'별빛 밤섬', ground:'#5f5799', patch:'#6c64a8', tuft:'#4d4588', slime:'#ff9fc8', hpMul:3.6, swarm:'ghost',
     desc:'유령들이 둥실둥실 떠다니는 별빛 가득한 밤의 섬이에요.', boss:'ghost', bossMsg:'왕유령이 나타났어요!',
     spawns:[['ghost',0,8],['slime',0,6],['penguin',150,4],['mushroom',240,4],['crab',380,3]] },
+  // ---- 6~10: 처음 1분은 시작 무기로 버틸 수 있게 체력을 낮게 두고, 시간이 갈수록 더 빨리 강해져요 ----
+  { id:'candy', name:'사탕 마을', ground:'#ffd6e8', patch:'#ffe6f1', tuft:'#f2a8c8', slime:'#ff9ec7', hpMul:3.9, grow:.36, dmgMul:1.1, rateMul:1.05, swarm:'bee',
+    desc:'젤리 슬라임이 통통 튀어 다니는 달콤한 사탕 마을이에요.', boss:'slime', bossCol:'#ff6fae', bossMsg:'젤리 대왕이 나타났어요!',
+    spawns:[['slime',0,9],['bee',30,6],['ghost',120,4],['mushroom',200,4],['penguin',320,3]] },
+  { id:'shroom', name:'버섯 골짜기', ground:'#7fcfb0', patch:'#93dbbf', tuft:'#5fb394', slime:'#9fe8a8', hpMul:4.3, grow:.40, dmgMul:1.2, rateMul:1.1, swarm:'slime',
+    desc:'튼튼한 버섯 친구들이 줄지어 몰려오는 안개 낀 골짜기예요.', boss:'mushroom', bossMsg:'버섯 대왕이 나타났어요!',
+    spawns:[['mushroom',0,7],['slime',0,7],['ghost',90,4],['crab',180,4],['bee',260,4]] },
+  { id:'desert', name:'노을 사막', ground:'#ffc98f', patch:'#ffd9a8', tuft:'#e8a868', slime:'#ffb37a', hpMul:4.7, grow:.44, dmgMul:1.3, rateMul:1.15, swarm:'bee',
+    desc:'단단한 꽃게와 펭귄이 모래바람을 타고 오는 노을빛 사막이에요.', boss:'crab', bossMsg:'사막 대왕 꽃게가 나타났어요!',
+    spawns:[['crab',0,7],['slime',0,6],['penguin',60,5],['bee',150,5],['mushroom',240,4]] },
+  { id:'sky', name:'구름 하늘섬', ground:'#cfe8ff', patch:'#f2f9ff', tuft:'#a8cdee', slime:'#b8a4ff', hpMul:5.1, grow:.48, dmgMul:1.4, rateMul:1.2, swarm:'ghost',
+    desc:'유령과 꿀벌이 하늘을 날아다니는 구름 위의 섬이에요.', boss:'ghost', bossMsg:'하늘 왕유령이 나타났어요!',
+    spawns:[['ghost',0,8],['bee',0,7],['slime',60,5],['penguin',180,4],['mushroom',300,4]] },
+  { id:'rainbow', name:'무지개 성', ground:'#efe2ff', patch:'#fbeaff', tuft:'#cdb3ee', slime:'#ff8fc5', hpMul:5.5, grow:.52, dmgMul:1.5, rateMul:1.25, swarm:'ghost',
+    desc:'모든 악당이 모여드는 마지막 무대, 무지개 성이에요.', boss:'slime', bossCol:'#b48cff', bossMsg:'무지개 대왕이 나타났어요!',
+    spawns:[['slime',0,6],['ghost',0,6],['crab',60,5],['penguin',120,5],['mushroom',180,5],['bee',240,5]] },
 ];
 const EN = {
   slime:    { hp:10, spd:46, dmg:8,  xp:1, r:10, subj:'슬라임이', crowd:'슬라임 떼' },
@@ -310,12 +327,12 @@ const WPN = {
 const EVO = {
   star:   { pas:'power',  name:'유성우',       cd:.55, desc:'커다란 별 6개가 쏟아지며 적을 셋까지 뚫어요' },
   petal:  { pas:'area',   name:'벚꽃 폭풍',     desc:'꽃잎 8장이 숨 쉬듯 넓어졌다 좁아지며 휘몰아쳐요' },
-  bubble: { pas:'magnet', name:'소용돌이 거품', cd:1.0, desc:'적을 쫓아가며 주변 적까지 빨아들이는 큰 거품' },
+  bubble: { pas:'magnet', name:'소용돌이 거품', cd:1.0, desc:'거품 3개가 적을 쫓아가며 주변 적까지 빨아들여요' },
   swing:  { pas:'speed',  name:'회오리 무지개', cd:.8, desc:'온 사방을 한 바퀴 휘둘러 크게 밀쳐내요' },
   acorn:  { pas:'cd',     name:'도토리 소나기', cd:1.0, desc:'커다란 도토리 5개가 쉴 새 없이 터져요' },
   thunder:{ pas:'magnet', name:'연쇄 번개',     cd:1.2, desc:'번개 5줄기가 맞은 적 주변으로 세 번씩 옮겨 붙어요' },
   aura:   { pas:'hp',     name:'생명의 숲',     desc:'넓은 오라가 적을 태우고 1초마다 체력을 1.6씩 채워요' },
-  boomerang:{ pas:'crit', name:'포춘 쿠키',     cd:.9, desc:'커다란 쿠키 4개가 더 멀리 날아가고 언제나 치명타로 맞혀요' },
+  boomerang:{ pas:'crit', name:'포춘 쿠키',     cd:.9, desc:'커다란 쿠키 4개가 아주 멀리 날아가고 언제나 치명타로 맞혀요' },
   water:  { pas:'regen',  name:'무지개 분수',   cd:2.0, desc:'커다란 무지개 웅덩이 4개가 적을 거의 멈춰 세워요' },
   note:   { pas:'armor',  name:'파도 합주',     cd:1.0, desc:'음표 16개가 파도처럼 물결치며 적을 셋까지 뚫어요' },
 };
@@ -347,15 +364,15 @@ const CHARS = [
 const charUnlocked = c => !c.cost || meta.unlockedChars.includes(c.id);
 const META_MAX = 7;
 const META_DEF = [
-  { id:'mhp',    icon:'hp',     name:'튼튼한 몸',       per:'최대 체력 +10',     cost:[15,30,55,90,140,200,280] },
-  { id:'mpow',   icon:'power',  name:'힘센 방울',       per:'공격력 +5%',        cost:[20,40,70,110,160,230,320] },
-  { id:'mspd',   icon:'speed',  name:'가벼운 발',       per:'이동 속도 +4%',     cost:[15,30,55,90,140,200,280] },
-  { id:'mmag',   icon:'magnet', name:'자석 손',         per:'줍는 범위 +10%',    cost:[10,20,40,70,110,160,230] },
-  { id:'mxp',    icon:'gem',    name:'반짝 눈',         per:'경험치 +6%',        cost:[20,40,70,110,160,230,320] },
-  { id:'mcd',    icon:'cd',     name:'빠른 손',         per:'쿨타임 -3%',        cost:[20,40,70,110,160,230,320] },
-  { id:'marmor', icon:'armor',  name:'단단한 껍질',     per:'받는 피해 -3%',     cost:[15,30,55,90,140,200,280] },
-  { id:'mcoin',  icon:'candy',  name:'욕심쟁이 주머니', per:'판마다 얻는 별사탕 +10%', cost:[25,50,80,120,170,240,330] },
-  { id:'mreroll', icon:'reroll', name:'다시 뽑기',     per:'레벨업 카드 새로고침 +1회 (기본 1회)', cost:[40,90,160,250], max:4 },
+  { id:'mhp',    icon:'hp',     name:'튼튼한 몸',       per:'최대 체력 +10',     cost:[25,45,85,135,210,300,420] },
+  { id:'mpow',   icon:'power',  name:'힘센 방울',       per:'공격력 +5%',        cost:[30,60,105,165,240,345,480] },
+  { id:'mspd',   icon:'speed',  name:'가벼운 발',       per:'이동 속도 +4%',     cost:[25,45,85,135,210,300,420] },
+  { id:'mmag',   icon:'magnet', name:'자석 손',         per:'줍는 범위 +10%',    cost:[15,30,60,105,165,240,345] },
+  { id:'mxp',    icon:'gem',    name:'반짝 눈',         per:'경험치 +6%',        cost:[30,60,105,165,240,345,480] },
+  { id:'mcd',    icon:'cd',     name:'빠른 손',         per:'쿨타임 -3%',        cost:[30,60,105,165,240,345,480] },
+  { id:'marmor', icon:'armor',  name:'단단한 껍질',     per:'받는 피해 -3%',     cost:[25,45,85,135,210,300,420] },
+  { id:'mcoin',  icon:'candy',  name:'욕심쟁이 주머니', per:'판마다 얻는 별사탕 +10%', cost:[40,75,120,180,255,360,495] },
+  { id:'mreroll', icon:'reroll', name:'다시 뽑기',     per:'레벨업 카드 새로고침 +1회 (기본 1회)', cost:[60,135,240,375], max:4 },
   { id:'mrevive', icon:'revive', name:'날개 하트',     per:'쓰러지면 판마다 1번, 체력을 가득 채우고 부활', cost:[1000], max:1 },
 ];
 
@@ -642,17 +659,17 @@ function pickKind(){
   return list[0][0];
 }
 function makeEnemy(kind, x, y, opt = {}){
-  const d = EN[kind], tm = 1 + G.time / 60 * .32, s = opt.s || 1;
+  const d = EN[kind], tm = 1 + G.time / 60 * (G.st.grow || .32), s = opt.s || 1;
   const hp = opt.hp || d.hp * G.st.hpMul * tm;
   return { kind, x, y, hp, max:hp, s, r:d.r * s, fly:!!d.fly, xp:d.xp,
     spd: d.spd * .63 * (opt.spdMul || 1) * (1 + Math.min(G.time, BOSS_AT) / BOSS_AT * .25),
-    dmg: Math.round(d.dmg * (1 + Math.min(G.time, BOSS_AT) / BOSS_AT * .6) * (opt.dmgMul || 1)),
-    ph: Math.random() * TAU, z:0, kx:0, ky:0, hurt:0, dead:false, col:G.st.slime, elite:!!opt.elite, boss:!!opt.boss, petalT:0, slowT:0, slowMul:1, walk:0, look:1 };
+    dmg: Math.round(d.dmg * (1 + Math.min(G.time, BOSS_AT) / BOSS_AT * .6) * (opt.dmgMul || 1) * (G.st.dmgMul || 1)),
+    ph: Math.random() * TAU, z:0, kx:0, ky:0, hurt:0, dead:false, col:(opt.boss && G.st.bossCol) || G.st.slime, elite:!!opt.elite, boss:!!opt.boss, petalT:0, slowT:0, slowMul:1, walk:0, look:1 };
 }
 function spawnTick(dt){
   const t = G.time;
   if (G.boss && G.boss.dead) return;
-  const rate = Math.min(13, 1.6 + t / 24) * (G.boss ? .45 : 1);
+  const rate = Math.min(13, 1.6 + t / 24) * (G.st.rateMul || 1) * (G.boss ? .45 : 1);
   G.spawnAcc += rate * dt;
   while (G.spawnAcc >= 1){
     G.spawnAcc--;
@@ -661,7 +678,7 @@ function spawnTick(dt){
   for (const et of [150, 300, 450, 600, 750]) if (t >= et && !G.events['e' + et]){
     G.events['e' + et] = 1;
     const [x, y] = spawnPos();
-    G.enemies.push(makeEnemy(G.st.boss, x, y, { s:2, hp:420 * G.st.hpMul * (1 + t / 60 * .32), elite:true, spdMul:.95, dmgMul:1.6 }));
+    G.enemies.push(makeEnemy(G.st.boss, x, y, { s:2, hp:420 * G.st.hpMul * (1 + t / 60 * (G.st.grow || .32)), elite:true, spdMul:.95, dmgMul:1.6 }));
     toast('커다란 ' + EN[G.st.boss].subj + ' 다가와요! 쓰러뜨리면 보물상자');
   }
   for (const et of [95, 255, 405, 525, 675, 825]) if (t >= et && !G.events['s' + et]){
@@ -834,10 +851,10 @@ function fire(w, D, L){
       G.proj.push({ k:'star', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * sp, vy:Math.sin(a) * sp, dmg, pierce, life:1.4, r, hit:new Set(), rot:0 });
     }
   } else if (w.id === 'bubble'){
-    const base = Math.atan2(p.fy, p.fx), n = E ? 4 : D.n[L];
+    const base = Math.atan2(p.fy, p.fx), n = E ? 3 : D.n[L];
     for (let i = 0; i < n; i++){
       const a = base + (i - (n - 1) / 2) * (E ? .6 : .38);
-      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125, vy:Math.sin(a) * 125, dmg: E ? 30 * EVO_POWER : D.dmg[L], life: E ? 3.2 : 2.4,
+      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125, vy:Math.sin(a) * 125, dmg: E ? 21 : D.dmg[L], life: E ? 3.2 : 2.4,
         r:(E ? 24 : D.size[L]) * S.area, hit:new Set(), rot:Math.random() * 6, seek:0, rehit:0 });
     }
     sfx('shoot', 80);
@@ -874,7 +891,7 @@ function fire(w, D, L){
     const vwW = vw / zoom, vhW = vh / zoom, cam = G.cam;
     const vis = G.enemies.filter(e => !e.dead && e.x > cam.x && e.x < cam.x + vwW && e.y > cam.y && e.y < cam.y + vhW);
     if (!vis.length){ w.t = .3; return; }
-    const n = E ? 5 : D.n[L], dmg = E ? 60 * EVO_POWER : D.dmg[L];
+    const n = E ? 5 : D.n[L], dmg = E ? 44 : D.dmg[L];
     for (let i = 0; i < n && vis.length; i++){
       const e = vis.splice((Math.random() * vis.length) | 0, 1)[0];
       const x = e.x, y = e.y;
@@ -896,12 +913,12 @@ function fire(w, D, L){
     }
     sfx('zap', 90);
   } else if (w.id === 'boomerang'){
-    const n = E ? 4 : D.n[L], tg = nearestEnemies(n, 360), sp = E ? 380 : 320;
+    const n = E ? 4 : D.n[L], tg = nearestEnemies(n, E ? 480 : 360), sp = E ? 380 : 320;
     const base = tg.length ? Math.atan2(tg[0].y - p.y, tg[0].x - p.x) : Math.atan2(p.fy, p.fx);
     for (let i = 0; i < n; i++){
       const a = tg[i] ? Math.atan2(tg[i].y - p.y, tg[i].x - p.x) : base + (i - (n - 1) / 2) * .5;
       G.proj.push({ k:'boomerang', evo:E, x:p.x, y:p.y - 12, dx:Math.cos(a), dy:Math.sin(a), vx:Math.cos(a) * sp, vy:Math.sin(a) * sp,
-        acc: E ? 470 : 540, dmg: E ? 40 * EVO_POWER : D.dmg[L], r:(E ? 14 : 9) * S.area, life:3, back:false, hit:new Set(), rot:0 });
+        acc: E ? 470 / 1.5 : 540, dmg: E ? 40 * EVO_POWER : D.dmg[L], r:(E ? 14 : 9) * S.area, life:3, back:false, hit:new Set(), rot:0 });
     }
     sfx('swing', 80);
   } else if (w.id === 'water'){
@@ -1571,6 +1588,20 @@ function drawGround(st, cam, vwW, vhW){
         X.fillStyle = '#e9fbff'; X.fillRect(bx - 1.3, by - 3, 2.6, 4.5);
         X.fillStyle = '#7ee8ff'; X.beginPath(); X.ellipse(bx, by - 3, 4.4, 3, 0, Math.PI, TAU); X.fill();
         X.fillStyle = 'rgba(126,232,255,.25)'; X.beginPath(); X.arc(bx, by - 3, 8, 0, TAU); X.fill();
+      } else if (st.id === 'candy' && h < .22){
+        const cc = ['#ff6fae', '#7fd3ff', '#ffd166', '#9fe8a8'][(h * 997 | 0) % 4];
+        X.fillStyle = cc; X.beginPath(); X.arc(bx, by, 3.6, 0, TAU); X.fill();
+        X.strokeStyle = 'rgba(255,255,255,.85)'; X.lineWidth = 1.2; X.beginPath(); X.arc(bx, by, 2, 0, 4.2); X.stroke();
+      } else if (st.id === 'shroom' && h < .2){
+        X.fillStyle = '#fff3e3'; X.fillRect(bx - 1.5, by - 3, 3, 5);
+        X.fillStyle = h < .13 ? '#c99bff' : '#ffb347'; X.beginPath(); X.ellipse(bx, by - 3, 5, 3.5, 0, Math.PI, TAU); X.fill();
+        X.fillStyle = '#fff'; X.beginPath(); X.arc(bx - 1.5, by - 4.5, .9, 0, TAU); X.fill();
+      } else if (st.id === 'desert' && h < .2){
+        X.fillStyle = 'rgba(184,118,63,.45)'; X.beginPath(); X.arc(bx, by, 1.6, 0, TAU); X.arc(bx + 5, by + 2, 1.2, 0, TAU); X.arc(bx - 4, by + 3, 1, 0, TAU); X.fill();
+      } else if (st.id === 'sky' && h < .2){
+        X.fillStyle = '#ffffff'; X.beginPath(); X.arc(bx - 4, by, 3.4, 0, TAU); X.arc(bx, by - 2, 4.2, 0, TAU); X.arc(bx + 4, by, 3.2, 0, TAU); X.fill();
+      } else if (st.id === 'rainbow' && h < .2){
+        X.save(); X.translate(bx, by); starPath(0, 0, 3.4, 4, .4); X.fillStyle = ['#ff8fc5', '#ffd166', '#7fd3ff', '#9fe8a8'][(h * 997 | 0) % 4]; X.fill(); X.restore();
       }
     } else if (h > .985){
       X.save(); X.translate(bx, by + 4);
@@ -1582,11 +1613,34 @@ function drawGround(st, cam, vwW, vhW){
             X.beginPath(); X.moveTo(cx - 3, 0); X.lineTo(cx - 3, -hh + 3); X.lineTo(cx, -hh); X.lineTo(cx + 3, -hh + 3); X.lineTo(cx + 3, 0); X.closePath(); fs(c, 1.8);
           }
         }
+        else if (st.id === 'candy'){
+          X.strokeStyle = INK; X.lineWidth = 4.5; X.lineCap = 'round'; X.beginPath(); X.moveTo(0, 0); X.lineTo(0, -14); X.stroke(); X.strokeStyle = '#fff'; X.lineWidth = 2; X.stroke();
+          ell(0, -18, 7, 7); fs('#ff8fc5', 2);
+          X.strokeStyle = '#fff'; X.lineWidth = 1.6; X.beginPath(); X.arc(0, -18, 3.6, 0, 4.5); X.stroke();
+        }
+        else if (st.id === 'shroom'){
+          rr(-3.5, -10, 7, 10, 2.5); fs('#fff1dd', 2);
+          X.beginPath(); X.moveTo(-12, -9); X.bezierCurveTo(-12, -24, 12, -24, 12, -9); X.quadraticCurveTo(0, -6, -12, -9); X.closePath(); fs('#c99bff', 2);
+          X.fillStyle = '#fff'; for (const [a, b2, r2] of [[-5, -15, 2.2], [4, -18, 2.5], [7, -12, 1.6]]){ X.beginPath(); X.arc(a, b2, r2, 0, TAU); X.fill(); }
+        }
+        else if (st.id === 'desert'){
+          rr(-4, -20, 8, 20, 4); fs('#5fb38a', 2);
+          rr(-11, -14, 6, 9, 3); fs('#5fb38a', 1.8); rr(5, -17, 6, 9, 3); fs('#5fb38a', 1.8);
+          ell(0, -21, 2.4, 2.4); fs('#ff8fc5', 1.4);
+        }
+        else if (st.id === 'sky'){ blobs([[-7, -5, 6], [0, -9, 8], [8, -5, 6]], '#ffffff', 2); }
+        else if (st.id === 'rainbow'){
+          for (const [r2, c] of [[13, '#ff8fc5'], [9.5, '#ffd166'], [6, '#7fd3ff']]){ X.beginPath(); X.arc(0, 0, r2, Math.PI, TAU); X.strokeStyle = INK; X.lineWidth = 5.5; X.stroke(); X.strokeStyle = c; X.lineWidth = 3; X.stroke(); }
+        }
         else blobs([[-6, -6, 7], [6, -6, 7], [0, -10, 8]], st.id === 'forest' ? '#3fa968' : '#4dbb62', 2);
       } else {
         if (st.id === 'forest'){ ell(0, -3, 9, 5); fs('#a8714a', 2); ell(0, -4, 6, 3); X.fillStyle = '#d9a56f'; X.fill(); }
         else if (st.id === 'snow'){ blobs([[-2, -5, 7], [5, -3, 5]], '#bdb5dd', 2); X.fillStyle = '#ffffff'; X.beginPath(); X.ellipse(-2, -10, 5.5, 2.6, 0, 0, TAU); X.fill(); }
         else if (st.id === 'night'){ blobs([[-2, -5, 7], [5, -3, 5]], '#8a80c4', 2); }
+        else if (st.id === 'candy'){ ell(0, -4, 7, 5); fs('#7fd3ff', 2); X.fillStyle = 'rgba(255,255,255,.7)'; ell(-2, -6, 2.4, 1.4, -.4); X.fill(); }
+        else if (st.id === 'desert'){ blobs([[-2, -5, 7], [5, -3, 5]], '#e0a878', 2); }
+        else if (st.id === 'sky'){ blobs([[-3, -4, 5], [3, -5, 6]], '#ffffff', 1.8); }
+        else if (st.id === 'rainbow'){ blobs([[-2, -5, 7], [5, -3, 5]], '#d9c6f5', 2); }
         else blobs([[-2, -5, 7], [5, -3, 5]], '#bdb5dd', 2);
       }
       X.restore();
@@ -1693,10 +1747,12 @@ function render(rt){
     }
     else if (q.k === 'bubble'){
       const r = q.r * (1 + Math.sin(q.rot) * .05);
-      if (q.evo){ ell(q.x, q.y + 12, q.r * 3, q.r * 2.4); X.fillStyle = 'rgba(180,140,255,.12)'; X.fill(); }
-      ell(q.x, q.y, r, r); X.fillStyle = q.evo ? 'rgba(200,170,255,.5)' : 'rgba(160,230,255,.45)'; X.fill(); X.lineWidth = 2; X.strokeStyle = 'rgba(58,46,95,.75)'; X.stroke();
+      if (q.evo) X.globalAlpha = .8;
+      if (q.evo){ ell(q.x, q.y + 12, q.r * 3, q.r * 2.4); X.fillStyle = 'rgba(180,140,255,.08)'; X.fill(); }
+      ell(q.x, q.y, r, r); X.fillStyle = q.evo ? 'rgba(200,170,255,.4)' : 'rgba(160,230,255,.45)'; X.fill(); X.lineWidth = 2; X.strokeStyle = 'rgba(58,46,95,.75)'; X.stroke();
       if (q.evo){ X.beginPath(); X.arc(q.x, q.y, r * .55, q.rot, q.rot + 4); X.strokeStyle = 'rgba(255,143,197,.85)'; X.lineWidth = 2.5; X.stroke(); }
       X.fillStyle = 'rgba(255,255,255,.85)'; ell(q.x - r * .35, q.y - r * .4, r * .25, r * .15, -.6); X.fill();
+      X.globalAlpha = 1;
     } else if (q.k === 'boomerang'){
       if (q.evo) glow(q.x, q.y, q.r * 2.4, '#ffe28a', .6);
       X.save(); X.translate(q.x, q.y); X.rotate(q.rot); X.scale(q.r / 15, q.r / 15); drawCookie(); X.restore();
@@ -1875,13 +1931,14 @@ function setScreen(kind){
       <p class="lead">몰려오는 악당들에게서 15분을 버티고 레벨업마다 무기와 능력을 골라 마지막에 나타나는 왕을 쓰러뜨리세요.</p>
       <div class="stages" role="radiogroup" aria-label="스테이지">${STAGES.map((s, i) => {
         const lock = !unlocked(i);
-        return `<button class="stage${i === selStage ? ' sel' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span>${s.name}</span><span class="ss">${lock ? '잠김' : meta.cleared[i] ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
+        return `<button class="stage${i === selStage ? ' sel' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${i + 1}단계</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : meta.cleared[i] ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
       <p class="hint">${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${selStage < STAGES.length - 1 && !unlocked(selStage + 1) ? ` 클리어하면 ${STAGES[selStage + 1].name}${(c => c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가')(STAGES[selStage + 1].name.charCodeAt(STAGES[selStage + 1].name.length - 1))} 열려요.` : ''}</p>
       <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">진화 도감</button></div>
     </div></div>`;
     heroCv = $('heroCv');
     $('bChar').addEventListener('click', () => setScreen('chars'));
-    screenEl.querySelectorAll('.stage').forEach(b => b.addEventListener('click', () => { selStage = +b.dataset.i; save('bangul.sv.stage', selStage); setScreen('title'); }));
+    screenEl.querySelectorAll('.stage').forEach(b => b.addEventListener('click', () => { const sc = screenEl.querySelector('.stages').scrollLeft; selStage = +b.dataset.i; save('bangul.sv.stage', selStage); setScreen('title'); const n = screenEl.querySelector('.stages'); if (n) n.scrollLeft = sc; }));
+    { const n = screenEl.querySelector('.stages'), b = n && n.querySelector('.stage.sel'); if (b && !n.dataset.kept) n.scrollLeft = Math.max(0, b.offsetLeft - n.clientWidth / 2 + b.clientWidth / 2); }
     $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); });
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
     $('bBook').addEventListener('click', () => { bookBack = 'title'; setScreen('book'); });
