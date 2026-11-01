@@ -100,10 +100,12 @@ body.menu #pad,body.menu #topBtns{display:none}
 .chcard.sel{background:#fff3c4;outline:3px solid var(--pink);outline-offset:2px}
 .chpic{width:64px;height:64px;border-radius:50%;border:2.5px solid var(--ink)}
 .chn{font-family:var(--font-display);font-size:18px}
+.chw .sig{font-weight:400;font-size:11px;background:#e6f7f0;color:#2f8f72;border-radius:6px;padding:0 4px;margin-left:2px}
 .chw{display:flex;align-items:center;gap:3px;font-size:12px;white-space:nowrap;font-family:var(--font-display)}
 .chw canvas{width:22px;height:22px}
 .cht{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11.5px;line-height:1.35;text-align:center}
 .cht .neg{color:#c2416f}
+.cht .pos{color:#2f8f72;white-space:nowrap;font-size:11px}
 .txt{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:10px}
 .eyebrow{margin:0;font-family:var(--font-display);font-size:13px;letter-spacing:.08em;color:var(--pink)}
 h1,h2{font-family:var(--font-display);font-weight:400;margin:0;line-height:1.08;text-wrap:balance}
@@ -188,6 +190,14 @@ body.touch .card .key{display:none}
 @media (max-width:420px){.shop{grid-template-columns:1fr}}
 .sinfo{min-width:0}
 .srow.maxed{background:#fff3c4}
+.sumbox{display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:#f2fbf7;border:2px dashed #7fcfb5;border-radius:14px;padding:7px 10px}
+.sumlab{font-family:var(--font-display);font-size:13px;color:#2f8f72;margin-right:4px}
+.sumchip{font-family:var(--font-display);font-size:13px;background:#fff;border:2px solid #7fcfb5;border-radius:999px;padding:1px 9px;color:var(--ink);white-space:nowrap}
+.sumbox .none{font-size:13px;color:#9a93b5}
+.stot{font-size:13px;color:var(--ink);display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;margin:1px 0}
+.stot b{font-family:var(--font-display);font-weight:400;font-size:14px;color:#2f8f72;background:#e6f7f0;border-radius:6px;padding:0 6px}
+.stot .none{color:#9a93b5}
+.stot .nx{font-size:12px;color:var(--soft)}
 .srow .lvn{font-family:var(--font-display);font-size:12px;color:var(--soft);letter-spacing:0}
 .srow{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;border:2.5px solid var(--ink);border-radius:14px;padding:6px 10px;background:#fff}
 .srow canvas{width:40px;height:40px}
@@ -315,7 +325,7 @@ const WPN = {
             desc:['적 무리에 도토리를 던져 펑 터뜨려요','공격력 +27%','도토리 2개','폭발 범위와 공격력 증가','도토리 3개, 더 자주'] },
   thunder:{ name:'번개 구름', cd:[2.2,2,1.8,1.8,1.5], n:[1,2,2,3,4], dmg:[26,26,34,34,44],
             desc:['화면 안 적에게 번개를 떨어뜨려요','번개 2줄기','공격력 +30%, 더 자주','번개 3줄기','번개 4줄기, 더 자주'] },
-  aura:   { name:'새싹 오라', rad:[46,52,58,64,72], dmg:[4,5,6,7,9],
+  aura:   { name:'새싹 오라', rad:[46,52,58,64,72], dmg:[6,7.5,9,10.5,13.5],
             desc:['몸 주변 적에게 계속 피해를 줘요','오라 범위·공격력 증가','오라 범위·공격력 증가','오라 범위·공격력 증가','오라 범위·공격력 크게 증가'] },
   boomerang:{ name:'부메랑 쿠키', cd:[1.5,1.4,1.4,1.3,1.1], n:[1,1,2,2,3], dmg:[14,18,18,24,30],
             desc:['적에게 쿠키를 던지면 돌아오면서 한 번 더 때려요','쿠키 공격력 +29%','쿠키 2개','쿠키 공격력 +33%','쿠키 3개, 더 자주'] },
@@ -331,7 +341,7 @@ const EVO = {
   swing:  { pas:'speed',  name:'회오리 무지개', cd:.8, desc:'온 사방을 한 바퀴 휘둘러 크게 밀쳐내요' },
   acorn:  { pas:'cd',     name:'도토리 소나기', cd:1.0, desc:'커다란 도토리 5개가 쉴 새 없이 터져요' },
   thunder:{ pas:'magnet', name:'연쇄 번개',     cd:1.2, desc:'번개 5줄기가 맞은 적 주변으로 세 번씩 옮겨 붙어요' },
-  aura:   { pas:'hp',     name:'생명의 숲',     desc:'넓은 오라가 적을 태우고 1초마다 체력을 1.6씩 채워요' },
+  aura:   { pas:'hp',     name:'생명의 숲',     desc:'아주 넓은 오라가 적을 태우고 1초마다 체력을 1.6씩 채워요' },
   boomerang:{ pas:'crit', name:'포춘 쿠키',     cd:.9, desc:'커다란 쿠키 4개가 아주 멀리 날아가고 언제나 치명타로 맞혀요' },
   water:  { pas:'regen',  name:'무지개 분수',   cd:2.0, desc:'커다란 무지개 웅덩이 4개가 적을 거의 멈춰 세워요' },
   note:   { pas:'armor',  name:'파도 합주',     cd:1.0, desc:'음표 16개가 파도처럼 물결치며 적을 셋까지 뚫어요' },
@@ -364,23 +374,24 @@ const CHARS = [
 const charUnlocked = c => !c.cost || meta.unlockedChars.includes(c.id);
 const META_MAX = 7;
 const META_DEF = [
-  { id:'mhp',    icon:'hp',     name:'튼튼한 몸',       per:'최대 체력 +10',     cost:[25,45,85,135,210,300,420] },
-  { id:'mpow',   icon:'power',  name:'힘센 방울',       per:'공격력 +5%',        cost:[30,60,105,165,240,345,480] },
-  { id:'mspd',   icon:'speed',  name:'가벼운 발',       per:'이동 속도 +4%',     cost:[25,45,85,135,210,300,420] },
-  { id:'mmag',   icon:'magnet', name:'자석 손',         per:'줍는 범위 +10%',    cost:[15,30,60,105,165,240,345] },
-  { id:'mxp',    icon:'gem',    name:'반짝 눈',         per:'경험치 +6%',        cost:[30,60,105,165,240,345,480] },
-  { id:'mcd',    icon:'cd',     name:'빠른 손',         per:'쿨타임 -3%',        cost:[30,60,105,165,240,345,480] },
-  { id:'marmor', icon:'armor',  name:'단단한 껍질',     per:'받는 피해 -3%',     cost:[25,45,85,135,210,300,420] },
-  { id:'mcoin',  icon:'candy',  name:'욕심쟁이 주머니', per:'판마다 얻는 별사탕 +10%', cost:[40,75,120,180,255,360,495] },
-  { id:'mreroll', icon:'reroll', name:'다시 뽑기',     per:'레벨업 카드 새로고침 +1회 (기본 1회)', cost:[60,135,240,375], max:4 },
-  { id:'mrevive', icon:'revive', name:'날개 하트',     per:'쓰러지면 판마다 1번, 체력을 가득 채우고 부활', cost:[1000], max:1 },
+  { id:'mhp', tot:l => `최대 체력 +${10 * l}`,     icon:'hp',     name:'튼튼한 몸',       per:'최대 체력 +10',     cost:[25,45,85,135,210,300,420] },
+  { id:'mpow', tot:l => `공격력 +${5 * l}%`,    icon:'power',  name:'힘센 방울',       per:'공격력 +5%',        cost:[30,60,105,165,240,345,480] },
+  { id:'mspd', tot:l => `이동 속도 +${4 * l}%`,    icon:'speed',  name:'가벼운 발',       per:'이동 속도 +4%',     cost:[25,45,85,135,210,300,420] },
+  { id:'mmag', tot:l => `줍는 범위 +${10 * l}%`,    icon:'magnet', name:'자석 손',         per:'줍는 범위 +10%',    cost:[15,30,60,105,165,240,345] },
+  { id:'mxp', tot:l => `경험치 +${6 * l}%`,     icon:'gem',    name:'반짝 눈',         per:'경험치 +6%',        cost:[30,60,105,165,240,345,480] },
+  { id:'mcd', tot:l => `쿨타임 -${3 * l}%`,     icon:'cd',     name:'빠른 손',         per:'쿨타임 -3%',        cost:[30,60,105,165,240,345,480] },
+  { id:'marmor', tot:l => `받는 피해 -${3 * l}%`,  icon:'armor',  name:'단단한 껍질',     per:'받는 피해 -3%',     cost:[25,45,85,135,210,300,420] },
+  { id:'mcoin', tot:l => `별사탕 +${10 * l}%`,   icon:'candy',  name:'욕심쟁이 주머니', per:'판마다 얻는 별사탕 +10%', cost:[40,75,120,180,255,360,495] },
+  { id:'mproj', tot:l => `투사체 속도 +${3 * l}%`, icon:'projspd', name:'바람 깃털', per:'투사체 속도 +3%', cost:[30,60,105,165,240,345,480] },
+  { id:'mreroll', tot:l => `새로고침 ${1 + l}회`,  icon:'reroll', name:'다시 뽑기',     per:'레벨업 카드 새로고침 +1회 (기본 1회)', cost:[60,135,240,375], max:4 },
+  { id:'mrevive', tot:l => l ? '부활 1회' : '부활 없음',  icon:'revive', name:'날개 하트',     per:'쓰러지면 판마다 1번, 체력을 가득 채우고 부활', cost:[1000], max:1 },
 ];
 
 /* ---------- storage ---------- */
 function load(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } }
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 const metaRaw = load('bangul.sv.meta', {}) || {};
-const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0 }, metaRaw.up || {}),
+const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0, mproj:0 }, metaRaw.up || {}),
   cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
@@ -437,6 +448,11 @@ let gameSpeed = load('bangul.sv.speed', 1); if (!SPEEDS.includes(gameSpeed)) gam
 const spdLabel = v => v + 'x';
 const evoReady = w => !w.evo && w.lvl >= 5 && (G.passives[EVO[w.id].pas] || 0) >= 1;
 const EVO_POWER = .8; // 진화 무기 위력 배율 (1 = 원래 세기)
+const EVO_PLUS_MAX = 2, EVO_PLUS_STEP = .25; // 진화 강화: 단계마다 공격력 +25%
+const evoPlusReady = w => w.evo && (w.evoLv || 0) < EVO_PLUS_MAX && (G.passives[EVO[w.id].pas] || 0) >= 5;
+const SIG_BONUS = 1.15; // 캐릭터 시작 무기 공격력 보너스
+const sigMul = w => G && G.ch && (G.ch.start === w.id || G.ch.start2 === w.id) ? SIG_BONUS : 1;
+const evoMul = w => 1 + EVO_PLUS_STEP * (w.evoLv || 0);
 const cdOf = w => w.evo ? EVO[w.id].cd : WPN[w.id].cd[w.lvl - 1];
 
 const hash = (x, y) => { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); };
@@ -458,6 +474,7 @@ function recalc(){
   S.crit = .08 * pv('crit') + (C.crit || 0);
   S.armor = Math.min(.7, .08 * pv('armor') + (C.armor || 0) + .03 * m('marmor'));
   S.regen = .4 * pv('regen') + (C.regen || 0);
+  S.projSpd = 1 + .03 * m('mproj');
   const old = G.p.maxHp;
   G.p.maxHp = Math.round((100 + 10 * m('mhp')) * (1 + .2 * pv('hp')) * (1 + (C.hp || 0)));
   if (old) G.p.hp += Math.max(0, G.p.maxHp - old);
@@ -830,17 +847,17 @@ function updateWeapons(dt){
 }
 function petalGeo(w){
   const D = WPN.petal, L = w.lvl - 1;
-  if (w.evo){ const base = 78 * S.area; return { n:8, rad: base * (1 + .32 * Math.sin(G.time * 2.2)), pr:12 * S.area, dmg:24 * EVO_POWER, spd:4.6 }; }
-  return { n:D.n[L], rad:D.rad[L] * S.area, pr:9 * S.area, dmg:D.dmg[L], spd:D.spd[L] };
+  if (w.evo){ const base = 78 * S.area; return { n:8, rad: base * (1 + .32 * Math.sin(G.time * 2.2)), pr:12 * S.area, dmg:24 * EVO_POWER * evoMul(w) * sigMul(w), spd:4.6 }; }
+  return { n:D.n[L], rad:D.rad[L] * S.area, pr:9 * S.area, dmg:D.dmg[L] * sigMul(w), spd:D.spd[L] };
 }
 function auraGeo(w){
   const D = WPN.aura, L = w.lvl - 1;
-  return w.evo ? { rad:95 * S.area, dmg:14 * EVO_POWER } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] };
+  return w.evo ? { rad:190 * S.area, dmg:28 * EVO_POWER * evoMul(w) * sigMul(w) } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] * sigMul(w) };
 }
 function fire(w, D, L){
-  const p = G.p, E = !!w.evo;
+  const p = G.p, E = !!w.evo, EM = evoMul(w), SM = sigMul(w), PS = S.projSpd || 1;
   if (w.id === 'star'){
-    const n = E ? 6 : D.n[L], dmg = E ? 30 * EVO_POWER : D.dmg[L], pierce = E ? 3 : D.pierce[L], sp = E ? 390 : 340, r = (E ? 10 : 7) * S.area;
+    const n = E ? 6 : D.n[L], dmg = (E ? 30 * EVO_POWER * EM : D.dmg[L]) * SM, pierce = E ? 3 : D.pierce[L], sp = (E ? 390 : 340) * PS, r = (E ? 10 : 7) * S.area;
     const tg = nearestEnemies(n, E ? 460 : 380);
     if (!tg.length){ w.t = .25; return; }
     sfx('shoot', 80);
@@ -854,12 +871,12 @@ function fire(w, D, L){
     const base = Math.atan2(p.fy, p.fx), n = E ? 3 : D.n[L];
     for (let i = 0; i < n; i++){
       const a = base + (i - (n - 1) / 2) * (E ? .6 : .38);
-      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125, vy:Math.sin(a) * 125, dmg: E ? 21 : D.dmg[L], life: E ? 3.2 : 2.4,
+      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125 * PS, vy:Math.sin(a) * 125 * PS, dmg: (E ? 21 * EM : D.dmg[L]) * SM, life: E ? 4.8 : 2.4,
         r:(E ? 24 : D.size[L]) * S.area, hit:new Set(), rot:Math.random() * 6, seek:0, rehit:0 });
     }
     sfx('shoot', 80);
   } else if (w.id === 'swing'){
-    const range = (E ? 96 : D.range[L]) * S.area, dmg = E ? 50 * EVO_POWER : D.dmg[L], base = Math.atan2(p.fy, p.fx);
+    const range = (E ? 96 : D.range[L]) * S.area, dmg = (E ? 50 * EVO_POWER * EM : D.dmg[L]) * SM, base = Math.atan2(p.fy, p.fx);
     if (E){
       G.fx.push({ k:'swing', spin:true, a:base, range, life:.3, max:.3 });
       query(p.x, p.y, range + 30, e => {
@@ -885,13 +902,13 @@ function fire(w, D, L){
       let tx, ty;
       if (cand.length){ const e = cand[(Math.random() * cand.length) | 0]; tx = e.x + (Math.random() - .5) * 20; ty = e.y + (Math.random() - .5) * 20; }
       else { const a = Math.random() * TAU; tx = p.x + Math.cos(a) * 120; ty = p.y + Math.sin(a) * 120; }
-      G.proj.push({ k:'acorn', evo:E, sx:p.x, sy:p.y - 12, tx, ty, x:p.x, y:p.y, t:0, dur:.55, dmg: E ? 55 * EVO_POWER : D.dmg[L], rad:(E ? 80 : D.rad[L]) * S.area, life:9 });
+      G.proj.push({ k:'acorn', evo:E, sx:p.x, sy:p.y - 12, tx, ty, x:p.x, y:p.y, t:0, dur:.55 / PS, dmg: (E ? 55 * EVO_POWER * EM : D.dmg[L]) * SM, rad:(E ? 80 : D.rad[L]) * S.area, life:9 });
     }
   } else if (w.id === 'thunder'){
     const vwW = vw / zoom, vhW = vh / zoom, cam = G.cam;
     const vis = G.enemies.filter(e => !e.dead && e.x > cam.x && e.x < cam.x + vwW && e.y > cam.y && e.y < cam.y + vhW);
     if (!vis.length){ w.t = .3; return; }
-    const n = E ? 5 : D.n[L], dmg = E ? 44 : D.dmg[L];
+    const n = E ? 5 : D.n[L], dmg = (E ? 44 * EM : D.dmg[L]) * SM;
     for (let i = 0; i < n && vis.length; i++){
       const e = vis.splice((Math.random() * vis.length) | 0, 1)[0];
       const x = e.x, y = e.y;
@@ -913,12 +930,12 @@ function fire(w, D, L){
     }
     sfx('zap', 90);
   } else if (w.id === 'boomerang'){
-    const n = E ? 4 : D.n[L], tg = nearestEnemies(n, E ? 480 : 360), sp = E ? 380 : 320;
+    const n = E ? 4 : D.n[L], tg = nearestEnemies(n, E ? 700 : 360), sp = (E ? 380 : 320) * PS;
     const base = tg.length ? Math.atan2(tg[0].y - p.y, tg[0].x - p.x) : Math.atan2(p.fy, p.fx);
     for (let i = 0; i < n; i++){
       const a = tg[i] ? Math.atan2(tg[i].y - p.y, tg[i].x - p.x) : base + (i - (n - 1) / 2) * .5;
       G.proj.push({ k:'boomerang', evo:E, x:p.x, y:p.y - 12, dx:Math.cos(a), dy:Math.sin(a), vx:Math.cos(a) * sp, vy:Math.sin(a) * sp,
-        acc: E ? 470 / 1.5 : 540, dmg: E ? 40 * EVO_POWER : D.dmg[L], r:(E ? 14 : 9) * S.area, life:3, back:false, hit:new Set(), rot:0 });
+        acc: (E ? 470 / 3 : 540) * PS, dmg: (E ? 40 * EVO_POWER * EM : D.dmg[L]) * SM, r:(E ? 18.2 : 9) * S.area, life: E ? 6 : 3, back:false, hit:new Set(), rot:0 });
     }
     sfx('swing', 80);
   } else if (w.id === 'water'){
@@ -927,7 +944,7 @@ function fire(w, D, L){
       let tx, ty;
       if (cand.length){ const e = cand[(Math.random() * cand.length) | 0]; tx = e.x + (Math.random() - .5) * 30; ty = e.y + (Math.random() - .5) * 30; }
       else { const a = Math.random() * TAU; tx = p.x + Math.cos(a) * 110; ty = p.y + Math.sin(a) * 110; }
-      G.proj.push({ k:'puddle', evo:E, x:tx, y:ty, r:(E ? 64 : D.rad[L]) * S.area, life, max:life, tick:0, dmg: E ? 16 * EVO_POWER : D.dmg[L], slow: E ? .3 : .55 });
+      G.proj.push({ k:'puddle', evo:E, x:tx, y:ty, r:(E ? 64 : D.rad[L]) * S.area, life, max:life, tick:0, dmg: (E ? 16 * EVO_POWER * EM : D.dmg[L]) * SM, slow: E ? .3 : .55 });
       burst(tx, ty - 6, ['#9fe8ff', '#fff'], 6, { speed:70 });
     }
     sfx('splash', 80);
@@ -936,7 +953,7 @@ function fire(w, D, L){
     const cols = ['#ff8fc5', '#6fd0ff', '#ffd166', '#b48cff'];
     for (let i = 0; i < n; i++){
       const a = w.a + i * TAU / n;
-      G.proj.push({ k:'note', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 220, vy:Math.sin(a) * 220, dmg: E ? 26 * EVO_POWER : D.dmg[L], pierce: E ? 3 : D.pierce[L],
+      G.proj.push({ k:'note', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 220 * PS, vy:Math.sin(a) * 220 * PS, dmg: (E ? 26 * EVO_POWER * EM : D.dmg[L]) * SM, pierce: E ? 3 : D.pierce[L],
         life: E ? 1.3 : 1.1, r:(E ? 9 : 7) * S.area, hit:new Set(), rot:0, t:0, col:cols[i % 4] });
     }
     sfx('note', 80);
@@ -969,7 +986,7 @@ function updateProj(dt){
         q.vx -= q.dx * q.acc * dt; q.vy -= q.dy * q.acc * dt;
         if (q.vx * q.dx + q.vy * q.dy < 0){ q.back = true; q.hit.clear(); }
       } else {
-        const dx = G.p.x - q.x, dy = G.p.y - 12 - q.y, d = Math.hypot(dx, dy) || 1, sp = Math.min(470, Math.hypot(q.vx, q.vy) + 520 * dt);
+        const dx = G.p.x - q.x, dy = G.p.y - 12 - q.y, d = Math.hypot(dx, dy) || 1, sp = Math.min(470 * (S.projSpd || 1) * (q.evo ? 1.3 : 1), Math.hypot(q.vx, q.vy) + 520 * dt);
         q.vx = dx / d * sp; q.vy = dy / d * sp;
         if (d < 16) q.life = 0;
       }
@@ -997,7 +1014,7 @@ function updateProj(dt){
       }
       if (q.tgt && !q.tgt.dead){
         const dx = q.tgt.x - q.x, dy = q.tgt.y - q.tgt.r - q.y, d = Math.hypot(dx, dy) || 1, k = Math.min(1, dt * 3);
-        q.vx += (dx / d * 135 - q.vx) * k; q.vy += (dy / d * 135 - q.vy) * k;
+        const hs = 135 * (S.projSpd || 1); q.vx += (dx / d * hs - q.vx) * k; q.vy += (dy / d * hs - q.vy) * k;
       }
       const pull = q.r * 3;
       query(q.x, q.y + 12, pull + 20, e => {
@@ -1043,10 +1060,12 @@ function upgradeRandom(){
   if (ready.length){ const id = ready[0].id; evolve(id); return `${EVO[id].name} 진화`; }
   const c = [];
   for (const w of G.weapons) if (w.lvl < 5) c.push({ type:'w', id:w.id });
+  for (const w of G.weapons) if (evoPlusReady(w)) c.push({ type:'evoup', id:w.id });
   for (const id in G.passives) if (G.passives[id] < 5) c.push({ type:'p', id });
   if (!c.length){ G.coins += 20; return '별사탕 +20'; }
   const pick = c[(Math.random() * c.length) | 0];
   applyChoice(pick);
+  if (pick.type === 'evoup') return `${EVO[pick.id].name} +${G.weapons.find(w => w.id === pick.id).evoLv}`;
   return pick.type === 'w' ? `${WPN[pick.id].name} Lv.${G.weapons.find(w => w.id === pick.id).lvl}` : `${PAS[pick.id].name} Lv.${G.passives[pick.id]}`;
 }
 function updateItems(dt){
@@ -1111,6 +1130,7 @@ function pickChoices(ex){
   if (G.weapons.length < 4) for (const id in WPN) if (!owned.has(id)) pool.push({ type:'w', id, wt:2.2 });
   for (const id of pk) if (G.passives[id] < 5) pool.push({ type:'p', id, wt:2.4 });
   if (pk.length < 4) for (const id in PAS) if (!(id in G.passives)) pool.push({ type:'p', id, wt:1.6 });
+  for (const w of G.weapons) if (evoPlusReady(w)) pool.push({ type:'evoup', id:w.id, wt:3.2 });
   if (ex){ const f = pool.filter(c => !ex.has(c.type + c.id)); if (f.length >= 3) pool.splice(0, pool.length, ...f); }
   const out = [];
   const ready = G.weapons.filter(evoReady);
@@ -1134,17 +1154,18 @@ function evolve(id){
 }
 function applyChoice(c){
   if (c.type === 'evo') evolve(c.id);
+  else if (c.type === 'evoup'){ const w = G.weapons.find(w => w.id === c.id); if (w){ w.evoLv = Math.min(EVO_PLUS_MAX, (w.evoLv || 0) + 1); burst(G.p.x, G.p.y - 14, ['#ffd166', '#ff8fc5', '#fff'], 24, { speed:160 }); } }
   else if (c.type === 'w'){ const w = G.weapons.find(w => w.id === c.id); if (w) w.lvl = Math.min(5, w.lvl + 1); else G.weapons.push(newWeapon(c.id)); }
   else if (c.type === 'p'){ G.passives[c.id] = (G.passives[c.id] || 0) + 1; recalc(); }
   else if (c.type === 'heal') G.p.hp = Math.min(G.p.maxHp, G.p.hp + 40);
   else if (c.type === 'coin') G.coins += 10;
 }
 function bagHtml(hl){
-  const slot = (icon, name, lv, evo, up) => `<div class="slot${evo ? ' evo' : ''}${up ? ' up' : ''}" title="${name}"><span class="sic"><canvas width="56" height="56" data-icon="${icon}" data-evo="${evo ? 1 : 0}" aria-hidden="true"></canvas><span class="lv">${evo ? '진화' : 'Lv.' + lv}</span></span><span class="sn2">${name}</span></div>`;
+  const slot = (icon, name, lv, evo, up) => `<div class="slot${evo ? ' evo' : ''}${up ? ' up' : ''}" title="${name}"><span class="sic"><canvas width="56" height="56" data-icon="${icon}" data-evo="${evo ? 1 : 0}" aria-hidden="true"></canvas><span class="lv">${evo ? (lv > 0 ? '진화+' + lv : '진화') : 'Lv.' + lv}</span></span><span class="sn2">${name}</span></div>`;
   const empty = n => '<div class="slot empty"><span class="sic"></span><span class="sn2">빈 칸</span></div>'.repeat(Math.max(0, n));
   const pk = Object.keys(G.passives);
   return `<div class="bag" aria-label="지금 가진 무기와 능력">
-    <div class="grp"><span class="gl">무기 ${G.weapons.length}/4</span>${G.weapons.map(w => slot(w.id, w.evo ? EVO[w.id].name : WPN[w.id].name, w.lvl, w.evo, hl && hl.has(w.id))).join('')}${empty(4 - G.weapons.length)}</div>
+    <div class="grp"><span class="gl">무기 ${G.weapons.length}/4</span>${G.weapons.map(w => slot(w.id, w.evo ? EVO[w.id].name : WPN[w.id].name, w.evo ? (w.evoLv || 0) : w.lvl, w.evo, hl && hl.has(w.id))).join('')}${empty(4 - G.weapons.length)}</div>
     <div class="grp"><span class="gl">능력 ${pk.length}/4</span>${pk.map(id => slot(id, PAS[id].name, G.passives[id], false, hl && hl.has(id))).join('')}${empty(4 - pk.length)}</div>
   </div>`;
 }
@@ -1153,11 +1174,16 @@ function openLevelUp(ex){
   const ch = pickChoices(ex);
   const evoHint = c => {
     if (c.type === 'w'){ const e = EVO[c.id]; return `진화 재료: ${PAS[e.pas].name}`; }
-    if (c.type === 'p'){ const ws = Object.keys(EVO).filter(id => EVO[id].pas === c.id).map(id => WPN[id].name); return ws.length ? `진화 재료로 쓰여요: ${ws.join(', ')}` : ''; }
+    if (c.type === 'p'){
+      const evoW = G.weapons.filter(w => w.evo && EVO[w.id].pas === c.id && (w.evoLv || 0) < EVO_PLUS_MAX);
+      if (evoW.length) return `Lv.5가 되면 ${evoW.map(w => EVO[w.id].name).join(', ')} 강화 가능`;
+      const ws = Object.keys(EVO).filter(id => EVO[id].pas === c.id).map(id => WPN[id].name); return ws.length ? `진화 재료로 쓰여요: ${ws.join(', ')}` : '';
+    }
     return '';
   };
   const info = c => {
     if (c.type === 'evo') return { icon:c.id, evo:true, name:EVO[c.id].name, tag:'진화!', isNew:false, desc:EVO[c.id].desc, lvl:0, hint:`${WPN[c.id].name} + ${PAS[EVO[c.id].pas].name}` };
+    if (c.type === 'evoup'){ const w = G.weapons.find(w => w.id === c.id), cur = w.evoLv || 0; return { icon:c.id, evo:true, name:EVO[c.id].name, tag:`진화 +${cur} → +${cur + 1}`, isNew:false, desc:`진화 무기 공격력 +${Math.round(EVO_PLUS_STEP * 100)}% (합계 +${Math.round(EVO_PLUS_STEP * 100 * (cur + 1))}%)`, lvl:0, hint:`${PAS[EVO[c.id].pas].name} Lv.5 달성 보너스` }; }
     if (c.type === 'w'){
       const w = G.weapons.find(w => w.id === c.id), next = w ? w.lvl + 1 : 1;
       return { icon:c.id, name:WPN[c.id].name, tag: w ? `Lv.${w.lvl} → ${next}` : '새 무기', isNew:!w, desc:WPN[c.id].desc[next - 1], lvl:next };
@@ -1171,7 +1197,7 @@ function openLevelUp(ex){
   };
   const pips = l => l ? '●'.repeat(l) + '○'.repeat(5 - l) : '';
   screenEl.hidden = false; document.body.classList.add('menu');
-  const hl = new Set(ch.filter(c => c.type === 'w' || c.type === 'p' || c.type === 'evo').map(c => c.id));
+  const hl = new Set(ch.filter(c => c.type === 'w' || c.type === 'p' || c.type === 'evo' || c.type === 'evoup').map(c => c.id));
   screenEl.innerHTML = `<div class="lvl"><div class="lvlhead"><h2>레벨 업! Lv.${G.level - G.pending + 1}</h2><button class="reroll" id="bReroll" ${G.rerolls > 0 ? '' : 'disabled'}><canvas width="44" height="44" data-icon="reroll" aria-hidden="true"></canvas>새로고침 <span class="rc">${G.rerolls}회</span><span class="key">R</span></button></div>${bagHtml(hl)}<div class="cards">${ch.map((c, i) => { const f = info(c); return `
     <button class="card${f.evo ? ' evo' : ''}" data-i="${i}"><canvas width="96" height="96" data-icon="${f.icon}" data-evo="${f.evo ? 1 : 0}" aria-hidden="true"></canvas><span class="cbody">
       <span class="cn">${f.name}</span><span class="ct${f.evo ? ' evo' : f.isNew ? ' new' : ''}">${f.tag}</span>
@@ -1340,6 +1366,14 @@ function drawIconBase(id, x, y, s){
       X.beginPath(); X.moveTo(0, -17); X.quadraticCurveTo(12, -1, 12, 5); X.arc(0, 5, 12, 0, Math.PI, false); X.quadraticCurveTo(-12, -1, 0, -17); X.closePath(); fs('#9fe8ff', 2.2);
       X.fillStyle = 'rgba(255,255,255,.8)'; ell(-5, 2, 2.6, 4.2, .3); X.fill();
       ell(5, 9, 2.4, 1.5); X.fillStyle = 'rgba(255,255,255,.6)'; X.fill();
+      break;
+    case 'projspd':
+      X.strokeStyle = INK; X.lineWidth = 2.4; X.lineCap = 'round';
+      for (const yy of [-8, 0, 8]){ X.beginPath(); X.moveTo(-19, yy); X.lineTo(-10 + Math.abs(yy) * .4, yy); X.stroke(); }
+      X.save(); X.rotate(-.6);
+      X.beginPath(); X.moveTo(-2, 14); X.quadraticCurveTo(-12, -2, 2, -16); X.quadraticCurveTo(14, -2, -2, 14); X.closePath(); fs('#9fe8ff', 2.2);
+      X.strokeStyle = INK; X.lineWidth = 1.6; X.beginPath(); X.moveTo(-2, 14); X.quadraticCurveTo(0, 0, 2, -14); X.stroke();
+      X.restore();
       break;
     case 'revive':
       for (const sx of [-1, 1]){
@@ -1867,11 +1901,15 @@ function drawHUD(rt){
   const slot = (id, lvl, x, y, evo) => {
     rr(x, y, 26, 26, 7); X.fillStyle = evo ? '#ffe9a3' : 'rgba(255,253,248,.9)'; X.fill(); X.lineWidth = evo ? 2.6 : 2; X.strokeStyle = INK; X.stroke();
     drawIcon(id, x + 13, y + 13, .52, evo);
-    if (evo){ drawStar(x + 24, y + 24, 5.5, '#ffd166', 1.4); return; }
+    if (evo){
+      drawStar(x + 24, y + 24, 5.5, '#ffd166', 1.4);
+      if (lvl > 0){ X.font = '10px Jua, "Gowun Dodum", sans-serif'; X.textAlign = 'left'; X.textBaseline = 'alphabetic'; X.lineWidth = 3; X.strokeStyle = INK; X.strokeText('+' + lvl, x - 2, y + 28); X.fillStyle = '#ffd166'; X.fillText('+' + lvl, x - 2, y + 28); }
+      return;
+    }
     X.font = '11px Jua, "Gowun Dodum", sans-serif'; X.textAlign = 'right'; X.textBaseline = 'alphabetic';
     X.lineWidth = 3; X.strokeStyle = INK; X.strokeText(lvl === 5 ? 'M' : String(lvl), x + 27, y + 28); X.fillStyle = '#fff'; X.fillText(lvl === 5 ? 'M' : String(lvl), x + 27, y + 28); X.textAlign = 'left';
   };
-  for (const w of G.weapons){ slot(w.id, w.lvl, ix, iy, w.evo); ix += 30; }
+  for (const w of G.weapons){ slot(w.id, w.evo ? (w.evoLv || 0) : w.lvl, ix, iy, w.evo); ix += 30; }
   ix = L; iy += 30;
   for (const id in G.passives){ slot(id, G.passives[id], ix, iy); ix += 30; }
   // kills & candy (below top buttons)
@@ -1949,10 +1987,11 @@ function setScreen(kind){
     screenEl.innerHTML = `<div class="panel" style="max-width:860px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
       <p class="lead">한 번 산 강화는 모든 판에 계속 적용돼요.</p>
+      ${(() => { const on = META_DEF.filter(m => (meta.up[m.id] || 0) > 0); return `<div class="sumbox"><span class="sumlab">지금 적용 중</span>${on.length ? on.map(m => `<span class="sumchip">${m.tot(Math.min(meta.up[m.id], m.max || META_MAX))}</span>`).join('') : '<span class="none">아직 산 강화가 없어요</span>'}</div>`; })()}
       <div class="shop">${META_DEF.map(m => {
         const mx = m.max || META_MAX, lv = Math.min(meta.up[m.id] || 0, mx), max = lv >= mx, cost = max ? 0 : m.cost[lv];
         return `<div class="srow${max ? ' maxed' : ''}"><canvas width="80" height="80" data-icon="${m.icon}" aria-hidden="true"></canvas>
-          <div class="sinfo"><div class="sn">${m.name}</div><div class="sd">${m.per}</div><div class="pips" aria-label="${lv}단계 / ${mx}단계">${pips(lv, mx)} <span class="lvn">${lv}/${mx}</span></div></div>
+          <div class="sinfo"><div class="sn">${m.name}</div><div class="sd">${m.per}</div><div class="stot">${lv ? `지금 <b>${m.tot(lv)}</b>` : '<span class="none">아직 없음</span>'}${max ? '' : `<span class="nx">다음 ${m.tot(lv + 1)}</span>`}</div><div class="pips" aria-label="${lv}단계 / ${mx}단계">${pips(lv, mx)} <span class="lvn">${lv}/${mx}</span></div></div>
           <button class="buy" data-id="${m.id}" ${max || meta.coins < cost ? 'disabled' : ''}>${max ? '최고 단계' : `별사탕 ${cost}`}</button></div>`; }).join('')}</div>
       <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
     </div></div>`;
@@ -1960,11 +1999,11 @@ function setScreen(kind){
     screenEl.querySelectorAll('.buy:not([type="submit"])').forEach(b => b.addEventListener('click', () => {
       const m = META_DEF.find(m => m.id === b.dataset.id), lv = meta.up[m.id];
       if (lv >= (m.max || META_MAX) || meta.coins < m.cost[lv]) return;
-      meta.coins -= m.cost[lv]; meta.up[m.id]++; saveMeta(); ensureAudio(); sfx('buy'); setScreen('shop');
+      meta.coins -= m.cost[lv]; meta.up[m.id]++; saveMeta(); ensureAudio(); sfx('buy'); setScreen('shop'); toast(`${m.name} ${meta.up[m.id]}단계! 지금 ${m.tot(meta.up[m.id])}`);
     }));
     $('bBack').addEventListener('click', () => { couponMsg = null; state = 'title'; setScreen('title'); });
   } else if (kind === 'pause'){
-    const owned = [...G.weapons.map(w => w.evo ? `${EVO[w.id].name} (진화)` : `${WPN[w.id].name} Lv.${w.lvl}`), ...Object.keys(G.passives).map(id => `${PAS[id].name} Lv.${G.passives[id]}`)];
+    const owned = [...G.weapons.map(w => w.evo ? `${EVO[w.id].name} (진화${w.evoLv ? '+' + w.evoLv : ''})` : `${WPN[w.id].name} Lv.${w.lvl}`), ...Object.keys(G.passives).map(id => `${PAS[id].name} Lv.${G.passives[id]}`)];
     screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
       <h2>잠깐 쉬는 중</h2>
       <p class="lead">${G.st.name} · ${fmt(G.time)} · Lv.${G.level} · 쓰러뜨린 적 ${G.kills}</p>
@@ -2040,7 +2079,7 @@ function setScreen(kind){
           ${c.start2
             ? `<span class="chpas"><span class="chpl">시작 무기 2개</span><span class="chpi">${[c.start, c.start2].map(id => `<span><canvas width="40" height="40" data-icon="${id}" aria-hidden="true"></canvas>${WPN[id].name}</span>`).join('')}</span></span>`
             : `<span class="chw" title="시작 무기"><canvas width="44" height="44" data-icon="${c.start}" aria-hidden="true"></canvas>${WPN[c.start].name}</span>`}
-          <span class="cht">${c.traits.map(t => `<span class="${/-[0-9]/.test(t) && /체력|속도/.test(t) ? 'neg' : ''}">${t}</span>`).join('')}</span>
+          <span class="cht"><span class="pos">전용 무기 공격력 +15%</span>${c.traits.map(t => `<span class="${/-[0-9]/.test(t) && /체력|속도/.test(t) ? 'neg' : ''}">${t}</span>`).join('')}</span>
           ${lock ? `<span class="unlock" data-msg><canvas width="40" height="40" data-icon="candy" aria-hidden="true"></canvas>${c.cost} 해금</span>` : ''}
         </button>`; }).join('')}</div>
     </div></div>`;
@@ -2074,7 +2113,7 @@ function setScreen(kind){
     const inRun = bookBack === 'pause' && G;
     screenEl.innerHTML = `<div class="panel" style="max-width:820px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>진화 도감</h2><button class="big alt" id="bBack">돌아가기</button></div>
-      <p class="lead">무기를 Lv.5까지 키우고 짝이 되는 능력을 하나라도 가지고 있으면, 다음 레벨업이나 보물상자에서 진화할 수 있어요.</p>
+      <p class="lead">무기를 Lv.5까지 키우고 짝이 되는 능력을 하나라도 가지고 있으면, 다음 레벨업이나 보물상자에서 진화할 수 있어요. 진화한 뒤 짝 능력을 Lv.5까지 올리면 진화 무기를 +2까지 더 강화할 수 있어요(단계마다 공격력 +25%).</p>
       <div class="book">${Object.keys(EVO).map(id => {
         const e = EVO[id], w = inRun ? G.weapons.find(w => w.id === id) : null, got = w && w.evo;
         const st = !inRun ? '' : got ? '진화 완료' : w ? `지금 Lv.${w.lvl}${G.passives[e.pas] ? ' · 재료 있음' : ''}` : '';
