@@ -1080,7 +1080,12 @@ function updateProj(dt){
     if (q.k === 'acorn'){ q.t += dt; if (q.t >= q.dur){ explode(q); q.life = 0; } continue; }
     if (q.k === 'bubble' && !q.evo){ q.vx *= .996; q.vy *= .996; }
     if (q.k === 'bubble' && q.evo){
-      // 소용돌이 거품: 처음 날아간 방향으로 계속 나아가며, 빨아들인 적을 함께 끌고 가요
+      // 소용돌이 거품: 화면 폭의 40% 정도만 나아가며 적을 끌고 간 뒤, 멈춰서 잠깐 빨아들이다 터져요
+      if (q.sx == null){ q.sx = q.x; q.sy = q.y; q.maxD = (vw / zoom) * .4; }
+      const trav = Math.hypot(q.x - q.sx, q.y - q.sy);
+      if (!q.stopped && trav >= q.maxD){ q.stopped = true; q.life = Math.min(q.life, 1.2); }
+      if (q.stopped){ const k = Math.max(0, 1 - dt * 8); q.vx *= k; q.vy *= k; }
+      else if (trav > q.maxD * .7){ const k = Math.max(.35, 1 - (trav - q.maxD * .7) / (q.maxD * .3)); const sp = 125 * (S.projSpd || 1) * k, l = Math.hypot(q.vx, q.vy) || 1; q.vx = q.vx / l * sp; q.vy = q.vy / l * sp; }
       const pull = q.r * 3, far = Math.hypot(q.x - G.p.x, q.y - G.p.y) > 70;
       query(q.x, q.y + 12, pull + 20, e => {
         if (e.boss) return;
