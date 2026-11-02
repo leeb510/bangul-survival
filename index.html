@@ -326,14 +326,40 @@ const STAGES = [
     rules:{ maxWeapons:1, noReroll:true, noRevive:true }, ruleText:['무기 1개만', '새로고침 불가', '날개 하트 불가', '적 수 +40%'],
     desc:'시작 무기 하나로 끝까지 버텨야 하는 결투장이에요.', boss:'crab', bossCol:'#ff5d5d', bossMsg:'결투장 챔피언이 나타났어요!',
     spawns:[['crab',0,6],['slime',0,7],['penguin',60,5],['ghost',150,5],['mushroom',220,5],['bee',300,4]] },
+  // ---- 11~15단계 (저장 기록이 꼬이지 않게 배열 뒤에 붙였어요) ----
+  { id:'swamp', req:9, bonus:330, name:'반딧불 늪', ground:'#6fa38a', patch:'#7fb39a', tuft:'#558a72', slime:'#c6f27a', hpMul:5.9, grow:.54, dmgMul:1.58, rateMul:1.3, swarm:'bee',
+    desc:'반딧불이 반짝이는 축축한 늪이에요.', boss:'mushroom', bossCol:'#9fe8a8', bossMsg:'늪지 대왕 버섯이 나타났어요!',
+    spawns:[['slime',0,7],['mushroom',0,5],['bee',40,6],['ghost',150,5],['crab',260,4]] },
+  { id:'icecave', req:12, bonus:360, name:'얼음 동굴', ground:'#a9c8e8', patch:'#bcd6f0', tuft:'#88aed6', slime:'#9fe0ff', hpMul:6.3, grow:.56, dmgMul:1.66, rateMul:1.35, swarm:'slime',
+    desc:'미끄러운 얼음 위로 펭귄 떼가 쏟아지는 동굴이에요.', boss:'penguin', bossMsg:'얼음 황제 펭귄이 나타났어요!',
+    spawns:[['penguin',0,7],['slime',0,6],['ghost',60,5],['crab',180,4],['mushroom',260,4]] },
+  { id:'lava', req:13, bonus:390, name:'용암 섬', ground:'#e0866a', patch:'#e99a80', tuft:'#c66d52', slime:'#ffb347', hpMul:6.7, grow:.58, dmgMul:1.74, rateMul:1.4, swarm:'bee',
+    desc:'뜨거운 바위 사이로 꽃게들이 몰려오는 용암 섬이에요.', boss:'crab', bossCol:'#ff8a3d', bossMsg:'용암 대왕 꽃게가 나타났어요!',
+    spawns:[['crab',0,7],['slime',0,6],['bee',40,6],['penguin',150,4],['mushroom',240,5]] },
+  { id:'toy', req:14, bonus:420, name:'장난감 공장', ground:'#cfd8ea', patch:'#dde4f2', tuft:'#aab7d3', slime:'#ff8fc5', hpMul:7.1, grow:.60, dmgMul:1.82, rateMul:1.45, swarm:'ghost',
+    desc:'태엽 장난감처럼 모든 악당이 줄지어 나오는 공장이에요.', boss:'slime', bossCol:'#7fd3ff', bossMsg:'태엽 왕슬라임이 나타났어요!',
+    spawns:[['slime',0,6],['bee',0,5],['crab',60,5],['penguin',120,5],['ghost',180,5],['mushroom',240,5]] },
+  { id:'moon', req:15, bonus:450, name:'달빛 왕궁', ground:'#3f3a78', patch:'#4a4588', tuft:'#332e66', slime:'#c9a7ff', hpMul:7.5, grow:.62, dmgMul:1.9, rateMul:1.5, swarm:'ghost',
+    desc:'일반 모드의 마지막 무대, 달빛이 비치는 왕궁이에요.', boss:'ghost', bossMsg:'달빛 왕유령이 나타났어요!',
+    spawns:[['ghost',0,8],['slime',0,6],['mushroom',60,5],['penguin',120,5],['crab',200,5],['bee',260,5]] },
 ];
-const HARD_COUNT = 10;
+// 화면에 보여 줄 순서: 일반 1~15단계 → 챌린지
+const NORMAL = STAGES.map((st, i) => i).filter(i => !STAGES[i].challenge);
+const CHALS = STAGES.map((st, i) => i).filter(i => STAGES[i].challenge);
+const ORDER = [...NORMAL, ...CHALS];
+NORMAL.forEach((i, k) => STAGES[i].num = k + 1);
+CHALS.forEach((i, k) => STAGES[i].cnum = k + 1);
+const LAST_NORMAL = NORMAL[NORMAL.length - 1];
+const HARD_COUNT = 15;
+// 하드 i단계: 일반 15단계(달빛 왕궁)보다 항상 어렵게, 단계마다 더 어려워져요
 function hardStage(i){
-  const b = STAGES[i];
-  return Object.assign({}, b, { hard:true, hpMul:+(5.8 + .5 * i).toFixed(2), grow:+(.54 + .02 * i).toFixed(2), dmgMul:+(1.55 + .07 * i).toFixed(2), rateMul:+(1.35 + .05 * i).toFixed(2), bonus:300 + 30 * i,
+  const b = STAGES[NORMAL[i]];
+  return Object.assign({}, b, { hard:true, hpMul:+(7.8 + .45 * i).toFixed(2), grow:+(.64 + .015 * i).toFixed(3), dmgMul:+(1.95 + .06 * i).toFixed(2), rateMul:+(1.55 + .04 * i).toFixed(2), bonus:450 + 30 * i,
     desc:'몬스터가 훨씬 많고 튼튼한 하드 모드예요.' });
 }
-const hardUnlocked = i => meta.cleared[HARD_COUNT - 1] && (i === 0 || !!meta.hardCleared[i - 1]);
+const hardOpenNow = () => !!meta.cleared[LAST_NORMAL] || meta.hardCleared.some(Boolean);
+const hardUnlocked = i => hardOpenNow() && (i === 0 || !!meta.hardCleared[i - 1]);
+const stageBase = () => hardMode ? STAGES[NORMAL[selStage]] : STAGES[selStage];
 let hardMode = !!load('bangul.sv.hard', false);
 const RULES = () => (G && G.st.rules) || {};
 const maxWeapons = () => RULES().maxWeapons || 4;
@@ -430,7 +456,7 @@ function load(k, d){ try { const v = localStorage.getItem(k); return v === null 
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 const metaRaw = load('bangul.sv.meta', {}) || {};
 const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0, mproj:0 }, metaRaw.up || {}),
-  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:10 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
+  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:15 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
 const settings = Object.assign({ bgm:70, sfx:80, view:1, orient:'landscape' }, load('bangul.sv.settings', {}) || {});
@@ -438,7 +464,7 @@ const saveSettings = () => save('bangul.sv.settings', settings);
 const ORIENTS = [{ v:'auto', label:'자동' }, { v:'landscape', label:'가로' }, { v:'portrait', label:'세로' }];
 const VIEWS = [{ v:.8, label:'넓게' }, { v:1, label:'기본' }, { v:1.2, label:'크게' }];
 let selStage = Math.min(load('bangul.sv.stage', 0), STAGES.length - 1);
-if (hardMode && !meta.cleared[HARD_COUNT - 1]) hardMode = false;
+if (hardMode && !hardOpenNow()) hardMode = false;
 if (hardMode) selStage = Math.min(selStage, HARD_COUNT - 1);
 let selChar = Math.max(0, CHARS.findIndex(c => c.id === load('bangul.sv.char', 'bangul')));
 if (!charUnlocked(CHARS[selChar])) selChar = 0;
@@ -523,10 +549,11 @@ function recalc(){
 const newWeapon = id => ({ id, lvl:1, t:.4, a:0 });
 function newRun(stage){
   const ch = CHARS[selChar];
-  G = { stage, st:hardMode && stage < HARD_COUNT ? hardStage(stage) : STAGES[stage], ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
+  const stDef = hardMode ? hardStage(stage) : STAGES[stage], rl = stDef.rules || {};
+  G = { stage, st:stDef, ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
     p:{ x:0, y:0, fx:1, fy:0, hp:0, maxHp:0, inv:0, dashT:0, dashCd:0, walk:0, moving:false },
-    enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon(ch.start), ...(ch.start2 ? [newWeapon(ch.start2)] : [])].slice(0, (STAGES[stage].rules || {}).maxWeapons || 4), passives:{},
-    rerolls: (STAGES[stage].rules || {}).noReroll ? 0 : 1 + (meta.up.mreroll || 0), revives: meta.up.mrevive && !(STAGES[stage].rules || {}).noRevive ? 1 : 0, spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
+    enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon(ch.start), ...(ch.start2 ? [newWeapon(ch.start2)] : [])].slice(0, rl.maxWeapons || 4), passives:{},
+    rerolls: rl.noReroll ? 0 : 1 + (meta.up.mreroll || 0), revives: meta.up.mrevive && !rl.noRevive ? 1 : 0, healTick:0, spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
   recalc(); G.p.hp = G.p.maxHp;
   snapCam();
 }
@@ -819,6 +846,11 @@ function updatePlayer(dt){
   p.x += mx * dt; p.y += my * dt;
   p.dashCd -= dt; p.inv -= dt;
   if (S.regen && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + S.regen * dt);
+  G.healTick += dt;
+  if (G.healTick >= 20){ // 기본 회복: 20초마다 최대 체력의 1%
+    G.healTick -= 20;
+    if (p.hp < p.maxHp){ const amt = p.maxHp * .01 * healMul(); p.hp = Math.min(p.maxHp, p.hp + amt); addText(p.x, p.y - 34, '+' + (Math.round(amt * 10) / 10), '#7ee08a'); }
+  }
 }
 function updateEnemies(dt){
   const p = G.p, farD = Math.hypot(vw, vh) / zoom * .95;
@@ -894,7 +926,7 @@ function petalGeo(w){
 }
 function auraGeo(w){
   const D = WPN.aura, L = w.lvl - 1;
-  return w.evo ? { rad:190 * S.area, dmg:28 * EVO_POWER * evoMul(w) * sigMul(w) } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] * sigMul(w) };
+  return w.evo ? { rad:152 * S.area, dmg:30.8 * EVO_POWER * evoMul(w) * sigMul(w) } : { rad:D.rad[L] * S.area, dmg:D.dmg[L] * sigMul(w) };
 }
 function fire(w, D, L){
   const p = G.p, E = !!w.evo, EM = evoMul(w), SM = sigMul(w), PS = S.projSpd || 1;
@@ -1048,21 +1080,15 @@ function updateProj(dt){
     if (q.k === 'acorn'){ q.t += dt; if (q.t >= q.dur){ explode(q); q.life = 0; } continue; }
     if (q.k === 'bubble' && !q.evo){ q.vx *= .996; q.vy *= .996; }
     if (q.k === 'bubble' && q.evo){
-      q.seek -= dt;
-      if (q.seek <= 0){
-        q.seek = .15; let best = null, bd = 280;
-        query(q.x, q.y + 12, 280, e => { const d = Math.hypot(e.x - q.x, e.y - q.y); if (d < bd){ bd = d; best = e; } });
-        q.tgt = best;
-      }
-      if (q.tgt && !q.tgt.dead){
-        const dx = q.tgt.x - q.x, dy = q.tgt.y - q.tgt.r - q.y, d = Math.hypot(dx, dy) || 1, k = Math.min(1, dt * 3);
-        const hs = 135 * (S.projSpd || 1); q.vx += (dx / d * hs - q.vx) * k; q.vy += (dy / d * hs - q.vy) * k;
-      }
-      const pull = q.r * 3;
+      // 소용돌이 거품: 처음 날아간 방향으로 계속 나아가며, 빨아들인 적을 함께 끌고 가요
+      const pull = q.r * 3, far = Math.hypot(q.x - G.p.x, q.y - G.p.y) > 70;
       query(q.x, q.y + 12, pull + 20, e => {
         if (e.boss) return;
         const dx = q.x - e.x, dy = q.y + 12 - e.y, d = Math.hypot(dx, dy) || 1;
-        if (d < pull && d > 6){ e.x += dx / d * 70 * dt; e.y += dy / d * 70 * dt; }
+        if (d < pull){
+          if (d > 6){ e.x += dx / d * 95 * dt; e.y += dy / d * 95 * dt; }
+          if (far){ e.x += q.vx * .85 * dt; e.y += q.vy * .85 * dt; }
+        }
       });
       q.rehit -= dt;
       if (q.rehit <= 0){ q.rehit = .5; q.hit.clear(); }
@@ -1075,6 +1101,18 @@ function updateProj(dt){
         q.hit.add(e);
         const l = Math.hypot(q.vx, q.vy) || 1;
         damage(e, q.dmg, q.vx / l, q.vy / l, q.k === 'bubble' ? .5 : .8);
+        if (q.k === 'star' && q.evo && !q.bounced){
+          // 유성우: 처음 맞힌 적에게서 한 번 튕겨 가까운 다른 적에게 날아가요
+          let best = null, bd = 240;
+          query(e.x, e.y, 240, o => { if (o === e || q.hit.has(o)) return; const d = Math.hypot(o.x - e.x, o.y - e.y); if (d < bd){ bd = d; best = o; } });
+          if (best){
+            q.bounced = true; q.pierce = Math.max(q.pierce, 2);
+            const sp2 = Math.hypot(q.vx, q.vy), dx2 = best.x - q.x, dy2 = best.y - best.r * .7 - q.y, d2 = Math.hypot(dx2, dy2) || 1;
+            q.vx = dx2 / d2 * sp2; q.vy = dy2 / d2 * sp2; q.life = Math.max(q.life, .9);
+            burst(q.x, q.y, ['#ffe066', '#fff'], 5, { speed:80, g:0 });
+            return;
+          }
+        }
         if (q.k === 'star' || q.k === 'note'){ q.pierce--; if (q.pierce <= 0) q.life = 0; }
       }
     });
@@ -1263,13 +1301,13 @@ function openLevelUp(ex){
 /* ---------- results ---------- */
 function showResult(win){
   const st = G.st, H = !!st.hard, clr = H ? meta.hardCleared : meta.cleared, wasCleared = clr[G.stage], bkey = st.id + (H ? '_h' : '');
-  const bonus = win ? (st.bonus || 30 * (G.stage + 1)) : 0, pouch = Math.round(G.coins * (.1 * (meta.up.mcoin || 0) + (G.ch.mods.coin || 0))), earned = G.coins + pouch + bonus;
+  const bonus = win ? (st.bonus || 30 * (st.num || G.stage + 1)) : 0, pouch = Math.round(G.coins * (.1 * (meta.up.mcoin || 0) + (G.ch.mods.coin || 0))), earned = G.coins + pouch + bonus;
   meta.coins += earned;
   if (win) clr[G.stage] = true;
   const prev = meta.best[bkey] || 0, newBest = G.time > prev + .5 && !win ? true : false;
   meta.best[bkey] = Math.max(prev, Math.min(G.time, BOSS_AT));
   saveMeta();
-  G.result = { win, earned, bonus, pouch, unlock: win && !wasCleared ? (H ? (G.stage < HARD_COUNT - 1 ? '하드 ' + STAGES[G.stage + 1].name : '') : [...unlocksOf(G.stage), ...(G.stage === HARD_COUNT - 1 ? ['하드 모드'] : [])].join(', ')) : '', newBest };
+  G.result = { win, earned, bonus, pouch, unlock: win && !wasCleared ? (H ? (G.stage < HARD_COUNT - 1 ? '하드 ' + STAGES[NORMAL[G.stage + 1]].name : '') : [...unlocksOf(G.stage), ...(G.stage === LAST_NORMAL && !meta.hardCleared.some(Boolean) ? ['하드 모드'] : [])].join(', ')) : '', newBest };
   state = 'result'; releaseJoy(); keys.clear();
   setScreen('result');
 }
@@ -1690,6 +1728,23 @@ function drawGround(st, cam, vwW, vhW){
         X.fillStyle = '#7a4f8f'; for (const k of [-3, 1, 4]){ X.beginPath(); X.moveTo(bx + k, by - 2); X.lineTo(bx + k + 1.4, by - 5.5); X.lineTo(bx + k + 2.4, by - 1.6); X.closePath(); X.fill(); }
       } else if (st.id === 'duel' && h < .2){
         X.strokeStyle = 'rgba(160,120,70,.4)'; X.lineWidth = 1.4; X.strokeRect(bx - 6, by - 4, 12, 8);
+      } else if (st.id === 'swamp' && h < .14){
+        X.fillStyle = '#4f8f62'; X.beginPath(); X.moveTo(bx, by); X.arc(bx, by, 6, .4, TAU - .2); X.closePath(); X.fill();
+      } else if (st.id === 'swamp' && h < .2){
+        const fl = .5 + .5 * Math.sin(performance.now() / 300 + h * 50);
+        X.fillStyle = `rgba(230,255,120,${.25 * fl})`; X.beginPath(); X.arc(bx, by - 8, 7, 0, TAU); X.fill();
+        X.fillStyle = '#f4ff9a'; X.beginPath(); X.arc(bx, by - 8, 1.8, 0, TAU); X.fill();
+      } else if (st.id === 'icecave' && h < .2){
+        X.fillStyle = 'rgba(255,255,255,.75)'; X.beginPath(); X.moveTo(bx, by - 6); X.lineTo(bx + 3, by); X.lineTo(bx, by + 3); X.lineTo(bx - 3, by); X.closePath(); X.fill();
+      } else if (st.id === 'lava' && h < .2){
+        const fl = .6 + .4 * Math.sin(performance.now() / 260 + h * 40);
+        X.fillStyle = `rgba(255,140,40,${.7 * fl})`; X.beginPath(); X.arc(bx, by, 2.2, 0, TAU); X.arc(bx + 5, by + 3, 1.5, 0, TAU); X.fill();
+      } else if (st.id === 'toy' && h < .2){
+        X.save(); X.translate(bx, by); X.rotate(h * 20); X.fillStyle = 'rgba(120,135,170,.55)';
+        for (let k = 0; k < 6; k++){ X.rotate(TAU / 6); X.fillRect(-1.4, -6, 2.8, 3); }
+        X.beginPath(); X.arc(0, 0, 3.8, 0, TAU); X.fill(); X.fillStyle = '#cfd8ea'; X.beginPath(); X.arc(0, 0, 1.6, 0, TAU); X.fill(); X.restore();
+      } else if (st.id === 'moon' && h < .2){
+        X.save(); X.translate(bx, by); starPath(0, 0, 2.8 + (h * 40 % 1), 4, .4); X.fillStyle = h < .1 ? '#fff3a8' : '#c9a7ff'; X.fill(); X.restore();
       }
     } else if (h > .985){
       X.save(); X.translate(bx, by + 4);
@@ -1728,6 +1783,26 @@ function drawGround(st, cam, vwW, vhW){
           X.strokeStyle = INK; X.lineWidth = 3; X.beginPath(); X.moveTo(0, 0); X.lineTo(0, -24); X.stroke();
           X.beginPath(); X.moveTo(0, -24); X.lineTo(13, -20); X.lineTo(0, -15); X.closePath(); fs('#ff5d5d', 1.8);
         }
+        else if (st.id === 'swamp'){
+          X.strokeStyle = INK; X.lineCap = 'round';
+          for (const [cx, hh] of [[-5, 20], [1, 25], [7, 18]]){ X.lineWidth = 3.5; X.beginPath(); X.moveTo(cx, 0); X.lineTo(cx, -hh); X.stroke(); X.strokeStyle = '#5fae6a'; X.lineWidth = 1.6; X.stroke(); X.strokeStyle = INK; rr(cx - 2.6, -hh - 6, 5.2, 10, 2.6); fs('#8a5a3b', 1.6); }
+        }
+        else if (st.id === 'icecave'){
+          for (const [cx, hh, w2] of [[-6, 16, 5], [1, 24, 6], [8, 13, 4.5]]){ X.beginPath(); X.moveTo(cx - w2, 0); X.lineTo(cx, -hh); X.lineTo(cx + w2, 0); X.closePath(); fs('#e6f6ff', 1.8); }
+        }
+        else if (st.id === 'lava'){
+          ell(0, -5, 11, 7); fs('#6b4a4a', 2);
+          X.fillStyle = '#ff8a3d'; X.beginPath(); X.moveTo(-4, -9); X.lineTo(0, -4); X.lineTo(4, -9); X.lineTo(1, -2); X.lineTo(-1, -2); X.closePath(); X.fill();
+          glow(0, -5, 16, '#ffb347', .35);
+        }
+        else if (st.id === 'toy'){
+          rr(-11, -10, 10, 10, 2); fs('#ff8fc5', 1.8); rr(1, -10, 10, 10, 2); fs('#7fd3ff', 1.8); rr(-5, -20, 10, 10, 2); fs('#ffd166', 1.8);
+        }
+        else if (st.id === 'moon'){
+          X.strokeStyle = INK; X.lineWidth = 3; X.beginPath(); X.moveTo(0, 0); X.lineTo(0, -18); X.stroke();
+          glow(0, -24, 14, '#fff3a8', .5);
+          X.beginPath(); X.arc(0, -24, 7, 0, TAU); X.arc(3, -26, 6, 0, TAU, true); X.fillStyle = '#ffe9a3'; X.fill('evenodd'); X.lineWidth = 1.6; X.strokeStyle = INK; X.stroke();
+        }
         else blobs([[-6, -6, 7], [6, -6, 7], [0, -10, 8]], st.id === 'forest' ? '#3fa968' : '#4dbb62', 2);
       } else {
         if (st.id === 'forest'){ ell(0, -3, 9, 5); fs('#a8714a', 2); ell(0, -4, 6, 3); X.fillStyle = '#d9a56f'; X.fill(); }
@@ -1738,6 +1813,11 @@ function drawGround(st, cam, vwW, vhW){
         else if (st.id === 'sky'){ blobs([[-3, -4, 5], [3, -5, 6]], '#ffffff', 1.8); }
         else if (st.id === 'rainbow'){ blobs([[-2, -5, 7], [5, -3, 5]], '#d9c6f5', 2); }
         else if (st.id === 'thorn'){ blobs([[-2, -5, 7], [5, -3, 5]], '#9a7fae', 2); }
+        else if (st.id === 'swamp'){ blobs([[-2, -5, 7], [5, -3, 5]], '#6f8f7a', 2); }
+        else if (st.id === 'icecave'){ blobs([[-2, -5, 7], [5, -3, 5]], '#d6ecff', 2); }
+        else if (st.id === 'lava'){ blobs([[-2, -5, 7], [5, -3, 5]], '#7a5858', 2); }
+        else if (st.id === 'toy'){ ell(0, -5, 6, 6); fs('#9fe8a8', 1.8); }
+        else if (st.id === 'moon'){ blobs([[-2, -5, 7], [5, -3, 5]], '#5c56a0', 2); }
         else if (st.id === 'duel'){ rr(-7, -12, 14, 12, 2); fs('#c98b56', 2); X.strokeStyle = '#8a5a3b'; X.lineWidth = 1.4; X.beginPath(); X.moveTo(-7, -6); X.lineTo(7, -6); X.stroke(); }
         else blobs([[-2, -5, 7], [5, -3, 5]], '#bdb5dd', 2);
       }
@@ -1750,7 +1830,7 @@ function drawGround(st, cam, vwW, vhW){
 function render(rt){
   X.setTransform(1, 0, 0, 1, 0, 0);
   if (!G || state === 'title' || state === 'shop'){
-    const st = STAGES[selStage];
+    const st = stageBase();
     titleCam.x = rt * 18; titleCam.y = Math.sin(rt * .1) * 40;
     const z = zoom * dpr;
     X.setTransform(z, 0, 0, z, -titleCam.x * z, -titleCam.y * z);
@@ -2025,27 +2105,27 @@ function setScreen(kind){
   if (!kind){ screenEl.hidden = true; screenEl.innerHTML = ''; return; }
   screenEl.hidden = false;
   if (kind === 'title'){
-    const hardOpen = !!meta.cleared[HARD_COUNT - 1];
+    const hardOpen = hardOpenNow();
     const st = hardMode ? hardStage(selStage) : STAGES[selStage], best = meta.best[st.id + (hardMode ? '_h' : '')];
-    const list = hardMode ? STAGES.slice(0, HARD_COUNT) : STAGES;
+    const list = hardMode ? NORMAL.map((k, i) => ({ s:hardStage(i), i })) : ORDER.map(k => ({ s:STAGES[k], i:k }));
     const ch = CHARS[selChar];
     screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
       <div class="row" style="justify-content:space-between"><div class="row" style="gap:10px"><p class="eyebrow">로그라이크 서바이벌</p><div class="seg modeseg" role="group" aria-label="모드"><button id="mNormal" aria-pressed="${!hardMode}">일반</button><button id="mHard" aria-pressed="${hardMode}" class="${hardOpen ? '' : 'locked'}">${hardOpen ? '' : '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2.5" fill="currentColor"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>'}하드</button></div></div><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
       <h1>방울섬 <span>서바이벌</span></h1>
       <p class="lead">몰려오는 악당들에게서 15분을 버티고 레벨업마다 무기와 능력을 골라 마지막에 나타나는 왕을 쓰러뜨리세요.</p>
-      <div class="stages${hardMode ? ' hardrow' : ''}" role="radiogroup" aria-label="스테이지">${list.map((s, i) => {
-        const lock = hardMode ? !hardUnlocked(i) : !unlocked(i), first = s.challenge && !STAGES[i - 1].challenge, done = hardMode ? meta.hardCleared[i] : meta.cleared[i];
-        return `${first ? '<span class="chdiv" aria-hidden="true">챌린지</span>' : ''}<button class="stage${i === selStage ? ' sel' : ''}${s.challenge ? ' chal' : ''}${hardMode ? ' hard' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${s.challenge ? '챌린지 ' + (i - 9) : (hardMode ? '하드 ' : '') + (i + 1) + '단계'}</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : done ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
-      <p class="hint">${st.challenge ? `<span class="rulechips">${st.ruleText.map(r => `<span>${r}</span>`).join('')}</span> ` : ''}${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${hardMode ? (selStage < HARD_COUNT - 1 && !hardUnlocked(selStage + 1) ? ` 클리어하면 하드 ${selStage + 2}단계가 열려요.` : '') : !hardOpen && selStage === HARD_COUNT - 1 ? ' 클리어하면 하드 모드가 열려요.' : ''}${hardMode ? '' : (() => { const nx = STAGES.map((s2, j) => j).filter(j => (STAGES[j].req ?? j - 1) === selStage && !unlocked(j)); if (!nx.length) return ''; const nm = STAGES[nx[0]].name, c = nm.charCodeAt(nm.length - 1); return ` 클리어하면 ${nm}${c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'} 열려요.`; })()}</p>
+      <div class="stages${hardMode ? ' hardrow' : ''}" role="radiogroup" aria-label="스테이지">${list.map(({ s, i }, li) => {
+        const lock = hardMode ? !hardUnlocked(i) : !unlocked(i), first = s.challenge && !(list[li - 1] && list[li - 1].s.challenge), done = hardMode ? meta.hardCleared[i] : meta.cleared[i];
+        return `${first ? '<span class="chdiv" aria-hidden="true">챌린지</span>' : ''}<button class="stage${i === selStage ? ' sel' : ''}${s.challenge ? ' chal' : ''}${hardMode ? ' hard' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${s.challenge ? '챌린지 ' + s.cnum : (hardMode ? '하드 ' : '') + s.num + '단계'}</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : done ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
+      <p class="hint">${st.challenge ? `<span class="rulechips">${st.ruleText.map(r => `<span>${r}</span>`).join('')}</span> ` : ''}${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${hardMode ? (selStage < HARD_COUNT - 1 && !hardUnlocked(selStage + 1) ? ` 클리어하면 하드 ${selStage + 2}단계가 열려요.` : '') : !hardOpen && selStage === LAST_NORMAL ? ' 클리어하면 하드 모드가 열려요.' : ''}${hardMode ? '' : (() => { const nx = STAGES.map((s2, j) => j).filter(j => (STAGES[j].req ?? j - 1) === selStage && !unlocked(j)); if (!nx.length) return ''; const nm = STAGES[nx[0]].name, c = nm.charCodeAt(nm.length - 1); return ` 클리어하면 ${nm}${c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'} 열려요.`; })()}</p>
       <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">진화 도감</button></div>
     </div></div>`;
     heroCv = $('heroCv');
     $('bChar').addEventListener('click', () => setScreen('chars'));
-    $('mNormal').addEventListener('click', () => { if (!hardMode) return; hardMode = false; save('bangul.sv.hard', false); setScreen('title'); });
+    $('mNormal').addEventListener('click', () => { if (!hardMode) return; hardMode = false; save('bangul.sv.hard', false); selStage = NORMAL[selStage] ?? 0; save('bangul.sv.stage', selStage); setScreen('title'); });
     $('mHard').addEventListener('click', () => {
-      if (!hardOpen){ ensureAudio(); sfx('hurt'); toast('일반 10단계(무지개 성)를 클리어하면 열려요'); return; }
+      if (!hardOpen){ ensureAudio(); sfx('hurt'); toast(`일반 15단계(${STAGES[LAST_NORMAL].name})를 클리어하면 열려요`); return; }
       if (hardMode) return; hardMode = true; save('bangul.sv.hard', true);
-      selStage = Math.min(selStage, HARD_COUNT - 1); if (!hardUnlocked(selStage)) selStage = 0; save('bangul.sv.stage', selStage); setScreen('title');
+      selStage = Math.max(0, NORMAL.indexOf(selStage)); if (!hardUnlocked(selStage)) selStage = 0; save('bangul.sv.stage', selStage); setScreen('title');
     });
     screenEl.querySelectorAll('.stage').forEach(b => b.addEventListener('click', () => { const sc = screenEl.querySelector('.stages').scrollLeft; selStage = +b.dataset.i; save('bangul.sv.stage', selStage); setScreen('title'); const n = screenEl.querySelector('.stages'); if (n) n.scrollLeft = sc; }));
     { const n = screenEl.querySelector('.stages'), b = n && n.querySelector('.stage.sel'); if (b){ const nr = n.getBoundingClientRect(), br = b.getBoundingClientRect(); n.scrollLeft = Math.max(0, n.scrollLeft + (br.left + br.width / 2) - (nr.left + nr.width / 2)); } }
@@ -2160,7 +2240,7 @@ function setScreen(kind){
       const prev = X; X = c.getContext('2d'); const ch = CHARS[+c.dataset.ch];
       X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, 128, 128);
       X.fillStyle = '#b8ecf7'; X.beginPath(); X.arc(64, 64, 62, 0, TAU); X.fill();
-      X.fillStyle = STAGES[selStage].ground; X.beginPath(); X.ellipse(64, 112, 70, 26, 0, 0, TAU); X.fill();
+      X.fillStyle = stageBase().ground; X.beginPath(); X.ellipse(64, 112, 70, 26, 0, 0, TAU); X.fill();
       X.setTransform(2.6, 0, 0, 2.6, 64, 100);
       X.fillStyle = 'rgba(58,46,95,.18)'; ell(0, 0, 11, 4); X.fill();
       drawBangul(0, 0, 0, .5, 0, false, 1, ch);
@@ -2222,7 +2302,7 @@ function drawHero(rt){
   if (!heroCv || !heroCv.isConnected) return;
   const prev = X; X = heroCv.getContext('2d');
   X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, heroCv.width, heroCv.height);
-  X.fillStyle = STAGES[selStage].ground; X.beginPath(); X.ellipse(120, 205, 140, 56, 0, 0, TAU); X.fill();
+  X.fillStyle = stageBase().ground; X.beginPath(); X.ellipse(120, 205, 140, 56, 0, 0, TAU); X.fill();
   X.setTransform(1, 0, 0, 1, 0, 0);
   const ch = CHARS[selChar];
   // the character's starting weapon orbits around it
