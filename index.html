@@ -145,6 +145,14 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 .stage .sw{width:100%;height:10px;border-radius:6px;border:2px solid var(--ink);box-sizing:border-box}
 .stage .ss{font-family:var(--font-body);font-size:12px;color:var(--soft)}
 .stage.sel{background:var(--sun)}
+.modeseg{box-shadow:0 2px 0 var(--ink);border-width:2px;border-radius:10px}
+.modeseg button{font-size:13px;padding:2px 10px;display:inline-flex;align-items:center;gap:3px}
+.modeseg button svg{width:11px;height:11px}
+.modeseg #mHard[aria-pressed="true"]{background:#ff7a8a;color:#fff}
+.modeseg #mHard.locked{color:#9a93b5}
+.stage.hard{border-color:#8a2340;box-shadow:0 3px 0 #8a2340}
+.stage.hard .sn{color:#c2416f;font-family:var(--font-display)}
+.stage.hard.sel{background:#ffb3bd}
 .stage.chal{border-color:#7a2f5a;box-shadow:0 3px 0 #7a2f5a;background:#fff0f4}
 .stage.chal .sn{color:#c2416f;font-family:var(--font-display)}
 .stage.chal.sel{background:#ffb8cc}
@@ -319,6 +327,14 @@ const STAGES = [
     desc:'시작 무기 하나로 끝까지 버텨야 하는 결투장이에요.', boss:'crab', bossCol:'#ff5d5d', bossMsg:'결투장 챔피언이 나타났어요!',
     spawns:[['crab',0,6],['slime',0,7],['penguin',60,5],['ghost',150,5],['mushroom',220,5],['bee',300,4]] },
 ];
+const HARD_COUNT = 10;
+function hardStage(i){
+  const b = STAGES[i];
+  return Object.assign({}, b, { hard:true, hpMul:+(5.8 + .5 * i).toFixed(2), grow:+(.54 + .02 * i).toFixed(2), dmgMul:+(1.55 + .07 * i).toFixed(2), rateMul:+(1.35 + .05 * i).toFixed(2), bonus:300 + 30 * i,
+    desc:'몬스터가 훨씬 많고 튼튼한 하드 모드예요.' });
+}
+const hardUnlocked = i => meta.cleared[HARD_COUNT - 1] && (i === 0 || !!meta.hardCleared[i - 1]);
+let hardMode = !!load('bangul.sv.hard', false);
 const RULES = () => (G && G.st.rules) || {};
 const maxWeapons = () => RULES().maxWeapons || 4;
 const healMul = () => RULES().healMul ?? 1;
@@ -414,7 +430,7 @@ function load(k, d){ try { const v = localStorage.getItem(k); return v === null 
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 const metaRaw = load('bangul.sv.meta', {}) || {};
 const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0, mproj:0 }, metaRaw.up || {}),
-  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
+  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:10 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
 const settings = Object.assign({ bgm:70, sfx:80, view:1, orient:'landscape' }, load('bangul.sv.settings', {}) || {});
@@ -422,6 +438,8 @@ const saveSettings = () => save('bangul.sv.settings', settings);
 const ORIENTS = [{ v:'auto', label:'자동' }, { v:'landscape', label:'가로' }, { v:'portrait', label:'세로' }];
 const VIEWS = [{ v:.8, label:'넓게' }, { v:1, label:'기본' }, { v:1.2, label:'크게' }];
 let selStage = Math.min(load('bangul.sv.stage', 0), STAGES.length - 1);
+if (hardMode && !meta.cleared[HARD_COUNT - 1]) hardMode = false;
+if (hardMode) selStage = Math.min(selStage, HARD_COUNT - 1);
 let selChar = Math.max(0, CHARS.findIndex(c => c.id === load('bangul.sv.char', 'bangul')));
 if (!charUnlocked(CHARS[selChar])) selChar = 0;
 const unlocked = i => i === 0 || !!meta.cleared[STAGES[i].req ?? i - 1];
@@ -505,7 +523,7 @@ function recalc(){
 const newWeapon = id => ({ id, lvl:1, t:.4, a:0 });
 function newRun(stage){
   const ch = CHARS[selChar];
-  G = { stage, st:STAGES[stage], ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
+  G = { stage, st:hardMode && stage < HARD_COUNT ? hardStage(stage) : STAGES[stage], ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
     p:{ x:0, y:0, fx:1, fy:0, hp:0, maxHp:0, inv:0, dashT:0, dashCd:0, walk:0, moving:false },
     enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon(ch.start), ...(ch.start2 ? [newWeapon(ch.start2)] : [])].slice(0, (STAGES[stage].rules || {}).maxWeapons || 4), passives:{},
     rerolls: (STAGES[stage].rules || {}).noReroll ? 0 : 1 + (meta.up.mreroll || 0), revives: meta.up.mrevive && !(STAGES[stage].rules || {}).noRevive ? 1 : 0, spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
@@ -715,10 +733,11 @@ function spawnTick(dt){
     G.spawnAcc--;
     if (G.enemies.length < 280){ const [x, y] = spawnPos(); G.enemies.push(makeEnemy(pickKind(), x, y)); }
   }
-  for (const et of [150, 300, 450, 600, 750]) if (t >= et && !G.events['e' + et]){
+  const ELITE_AT = [150, 300, 450, 600, 750], ELITE_HP = [.5, .6, .7, .8, .9]; // 중간 보스: 처음 50%, 나올 때마다 10%씩 늘어나요
+  for (const [ei, et] of ELITE_AT.entries()) if (t >= et && !G.events['e' + et]){
     G.events['e' + et] = 1;
     const [x, y] = spawnPos();
-    G.enemies.push(makeEnemy(G.st.boss, x, y, { s:2, hp:420 * G.st.hpMul * (1 + t / 60 * (G.st.grow || .32)), elite:true, spdMul:.95, dmgMul:1.6 }));
+    G.enemies.push(makeEnemy(G.st.boss, x, y, { s:2, hp:420 * G.st.hpMul * (1 + t / 60 * (G.st.grow || .32)) * ELITE_HP[ei], elite:true, spdMul:.95, dmgMul:1.6 }));
     toast('커다란 ' + EN[G.st.boss].subj + ' 다가와요! 쓰러뜨리면 보물상자');
   }
   for (const et of [95, 255, 405, 525, 675, 825]) if (t >= et && !G.events['s' + et]){
@@ -958,7 +977,7 @@ function fire(w, D, L){
     for (let i = 0; i < n; i++){
       const a = tg[i] ? Math.atan2(tg[i].y - p.y, tg[i].x - p.x) : base + (i - (n - 1) / 2) * .5;
       G.proj.push({ k:'boomerang', evo:E, x:p.x, y:p.y - 12, dx:Math.cos(a), dy:Math.sin(a), vx:Math.cos(a) * sp, vy:Math.sin(a) * sp,
-        acc: (E ? 470 / 3 : 540) * PS, dmg: (E ? 40 * EVO_POWER * EM : D.dmg[L]) * SM, r:(E ? 18.2 : 9) * S.area, life: E ? 6 : 3, back:false, hit:new Set(), rot:0 });
+        acc: (E ? 470 / 3 : 540) * PS, dmg: (E ? 36 * EVO_POWER * EM : D.dmg[L]) * SM, r:(E ? 18.2 : 9) * S.area, life: E ? 6 : 3, back:false, hit:new Set(), rot:0 });
     }
     sfx('swing', 80);
   } else if (w.id === 'water'){
@@ -1243,14 +1262,14 @@ function openLevelUp(ex){
 
 /* ---------- results ---------- */
 function showResult(win){
-  const st = G.st, wasCleared = meta.cleared[G.stage];
+  const st = G.st, H = !!st.hard, clr = H ? meta.hardCleared : meta.cleared, wasCleared = clr[G.stage], bkey = st.id + (H ? '_h' : '');
   const bonus = win ? (st.bonus || 30 * (G.stage + 1)) : 0, pouch = Math.round(G.coins * (.1 * (meta.up.mcoin || 0) + (G.ch.mods.coin || 0))), earned = G.coins + pouch + bonus;
   meta.coins += earned;
-  if (win) meta.cleared[G.stage] = true;
-  const prev = meta.best[st.id] || 0, newBest = G.time > prev + .5 && !win ? true : false;
-  meta.best[st.id] = Math.max(prev, Math.min(G.time, BOSS_AT));
+  if (win) clr[G.stage] = true;
+  const prev = meta.best[bkey] || 0, newBest = G.time > prev + .5 && !win ? true : false;
+  meta.best[bkey] = Math.max(prev, Math.min(G.time, BOSS_AT));
   saveMeta();
-  G.result = { win, earned, bonus, pouch, unlock: win && !wasCleared ? unlocksOf(G.stage).join(', ') : '', newBest };
+  G.result = { win, earned, bonus, pouch, unlock: win && !wasCleared ? (H ? (G.stage < HARD_COUNT - 1 ? '하드 ' + STAGES[G.stage + 1].name : '') : [...unlocksOf(G.stage), ...(G.stage === HARD_COUNT - 1 ? ['하드 모드'] : [])].join(', ')) : '', newBest };
   state = 'result'; releaseJoy(); keys.clear();
   setScreen('result');
 }
@@ -2006,23 +2025,31 @@ function setScreen(kind){
   if (!kind){ screenEl.hidden = true; screenEl.innerHTML = ''; return; }
   screenEl.hidden = false;
   if (kind === 'title'){
-    const st = STAGES[selStage], best = meta.best[st.id];
+    const hardOpen = !!meta.cleared[HARD_COUNT - 1];
+    const st = hardMode ? hardStage(selStage) : STAGES[selStage], best = meta.best[st.id + (hardMode ? '_h' : '')];
+    const list = hardMode ? STAGES.slice(0, HARD_COUNT) : STAGES;
     const ch = CHARS[selChar];
     screenEl.innerHTML = `<div class="panel"><button class="charbtn" id="bChar" aria-label="캐릭터 바꾸기, 지금 ${ch.name}"><canvas class="art" id="heroCv" width="240" height="240" aria-hidden="true"></canvas><span class="cname">${ch.name} <small>${ch.role}</small></span><span class="chg">캐릭터 바꾸기</span></button><div class="txt">
-      <div class="row" style="justify-content:space-between"><p class="eyebrow">로그라이크 서바이벌</p><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
+      <div class="row" style="justify-content:space-between"><div class="row" style="gap:10px"><p class="eyebrow">로그라이크 서바이벌</p><div class="seg modeseg" role="group" aria-label="모드"><button id="mNormal" aria-pressed="${!hardMode}">일반</button><button id="mHard" aria-pressed="${hardMode}" class="${hardOpen ? '' : 'locked'}">${hardOpen ? '' : '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2.5" fill="currentColor"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>'}하드</button></div></div><div class="row" style="gap:8px">${candyHtml(meta.coins)}<button class="minibtn gear" id="bSettings" aria-label="설정">${GEAR}설정</button></div></div>
       <h1>방울섬 <span>서바이벌</span></h1>
       <p class="lead">몰려오는 악당들에게서 15분을 버티고 레벨업마다 무기와 능력을 골라 마지막에 나타나는 왕을 쓰러뜨리세요.</p>
-      <div class="stages" role="radiogroup" aria-label="스테이지">${STAGES.map((s, i) => {
-        const lock = !unlocked(i), first = s.challenge && !STAGES[i - 1].challenge;
-        return `${first ? '<span class="chdiv" aria-hidden="true">챌린지</span>' : ''}<button class="stage${i === selStage ? ' sel' : ''}${s.challenge ? ' chal' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${s.challenge ? '챌린지 ' + (i - 9) : (i + 1) + '단계'}</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : meta.cleared[i] ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
-      <p class="hint">${st.challenge ? `<span class="rulechips">${st.ruleText.map(r => `<span>${r}</span>`).join('')}</span> ` : ''}${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${(() => { const nx = STAGES.map((s2, j) => j).filter(j => (STAGES[j].req ?? j - 1) === selStage && !unlocked(j)); if (!nx.length) return ''; const nm = STAGES[nx[0]].name, c = nm.charCodeAt(nm.length - 1); return ` 클리어하면 ${nm}${c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'} 열려요.`; })()}</p>
+      <div class="stages${hardMode ? ' hardrow' : ''}" role="radiogroup" aria-label="스테이지">${list.map((s, i) => {
+        const lock = hardMode ? !hardUnlocked(i) : !unlocked(i), first = s.challenge && !STAGES[i - 1].challenge, done = hardMode ? meta.hardCleared[i] : meta.cleared[i];
+        return `${first ? '<span class="chdiv" aria-hidden="true">챌린지</span>' : ''}<button class="stage${i === selStage ? ' sel' : ''}${s.challenge ? ' chal' : ''}${hardMode ? ' hard' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${s.challenge ? '챌린지 ' + (i - 9) : (hardMode ? '하드 ' : '') + (i + 1) + '단계'}</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : done ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
+      <p class="hint">${st.challenge ? `<span class="rulechips">${st.ruleText.map(r => `<span>${r}</span>`).join('')}</span> ` : ''}${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${hardMode ? (selStage < HARD_COUNT - 1 && !hardUnlocked(selStage + 1) ? ` 클리어하면 하드 ${selStage + 2}단계가 열려요.` : '') : !hardOpen && selStage === HARD_COUNT - 1 ? ' 클리어하면 하드 모드가 열려요.' : ''}${hardMode ? '' : (() => { const nx = STAGES.map((s2, j) => j).filter(j => (STAGES[j].req ?? j - 1) === selStage && !unlocked(j)); if (!nx.length) return ''; const nm = STAGES[nx[0]].name, c = nm.charCodeAt(nm.length - 1); return ` 클리어하면 ${nm}${c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'} 열려요.`; })()}</p>
       <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">진화 도감</button></div>
     </div></div>`;
     heroCv = $('heroCv');
     $('bChar').addEventListener('click', () => setScreen('chars'));
+    $('mNormal').addEventListener('click', () => { if (!hardMode) return; hardMode = false; save('bangul.sv.hard', false); setScreen('title'); });
+    $('mHard').addEventListener('click', () => {
+      if (!hardOpen){ ensureAudio(); sfx('hurt'); toast('일반 10단계(무지개 성)를 클리어하면 열려요'); return; }
+      if (hardMode) return; hardMode = true; save('bangul.sv.hard', true);
+      selStage = Math.min(selStage, HARD_COUNT - 1); if (!hardUnlocked(selStage)) selStage = 0; save('bangul.sv.stage', selStage); setScreen('title');
+    });
     screenEl.querySelectorAll('.stage').forEach(b => b.addEventListener('click', () => { const sc = screenEl.querySelector('.stages').scrollLeft; selStage = +b.dataset.i; save('bangul.sv.stage', selStage); setScreen('title'); const n = screenEl.querySelector('.stages'); if (n) n.scrollLeft = sc; }));
-    { const n = screenEl.querySelector('.stages'), b = n && n.querySelector('.stage.sel'); if (b && !n.dataset.kept) n.scrollLeft = Math.max(0, b.offsetLeft - n.clientWidth / 2 + b.clientWidth / 2); }
-    $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); if (G.st.challenge) toast('챌린지: ' + G.st.ruleText.join(' · ')); });
+    { const n = screenEl.querySelector('.stages'), b = n && n.querySelector('.stage.sel'); if (b){ const nr = n.getBoundingClientRect(), br = b.getBoundingClientRect(); n.scrollLeft = Math.max(0, n.scrollLeft + (br.left + br.width / 2) - (nr.left + nr.width / 2)); } }
+    $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); if (G.st.challenge) toast('챌린지: ' + G.st.ruleText.join(' · ')); else if (G.st.hard) toast('하드 모드: 몬스터가 더 많고 튼튼해요'); });
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
     $('bBook').addEventListener('click', () => { bookBack = 'title'; setScreen('book'); });
     $('bSettings').addEventListener('click', () => { settingsBack = 'title'; setScreen('settings'); });
@@ -2175,7 +2202,7 @@ function setScreen(kind){
   } else if (kind === 'result'){
     const r = G.result;
     screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
-      <p class="eyebrow">${G.st.challenge ? '챌린지 · ' : ''}${G.st.name}</p>
+      <p class="eyebrow">${G.st.challenge ? '챌린지 · ' : G.st.hard ? '하드 · ' : ''}${G.st.name}</p>
       <h2>${r.win ? (G.st.challenge ? '챌린지 성공!' : '섬을 지켜냈어요!') : '앗, 쓰러졌어요'}</h2>
       <dl class="stats">
         <dt>버틴 시간</dt><dd>${fmt(G.time)}</dd>
