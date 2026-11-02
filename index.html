@@ -415,7 +415,7 @@ const WPN = {
 const EVO = {
   star:   { pas:'power',  name:'유성우',       cd:.55, desc:'커다란 별 6개가 쏟아지며 적을 셋까지 뚫어요' },
   petal:  { pas:'area',   name:'벚꽃 폭풍',     desc:'꽃잎 8장이 숨 쉬듯 넓어졌다 좁아지며 휘몰아쳐요' },
-  bubble: { pas:'magnet', name:'소용돌이 거품', cd:1.0, desc:'거품 3개가 적을 쫓아가며 주변 적까지 빨아들여요' },
+  bubble: { pas:'magnet', name:'소용돌이 거품', cd:2.0, desc:'거품 3개가 적을 쫓아가며 주변 적까지 빨아들여요' },
   swing:  { pas:'speed',  name:'회오리 무지개', cd:.8, desc:'온 사방을 한 바퀴 휘둘러 크게 밀쳐내요' },
   acorn:  { pas:'cd',     name:'도토리 소나기', cd:1.0, desc:'커다란 도토리 5개가 쉴 새 없이 터져요' },
   thunder:{ pas:'magnet', name:'연쇄 번개',     cd:1.2, desc:'번개 5줄기가 맞은 적 주변으로 세 번씩 옮겨 붙어요' },
@@ -963,7 +963,7 @@ function fire(w, D, L){
     const base = Math.atan2(p.fy, p.fx), n = E ? 3 : D.n[L];
     for (let i = 0; i < n; i++){
       const a = base + (i - (n - 1) / 2) * (E ? .6 : .38);
-      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 125 * PS, vy:Math.sin(a) * 125 * PS, dmg: (E ? 21 * EM : D.dmg[L]) * SM, life: E ? 4.8 : 2.4,
+      G.proj.push({ k:'bubble', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * (E ? 62.5 : 125) * PS, vy:Math.sin(a) * (E ? 62.5 : 125) * PS, dmg: (E ? 21 * EM : D.dmg[L]) * SM, life: E ? 4.8 : 2.4,
         r:(E ? 24 : D.size[L]) * S.area, hit:new Set(), rot:Math.random() * 6, seek:0, rehit:0 });
     }
     sfx('shoot', 80);
@@ -1098,20 +1098,20 @@ function updateProj(dt){
     if (q.k === 'acorn'){ q.t += dt; if (q.t >= q.dur){ explode(q); q.life = 0; } continue; }
     if (q.k === 'bubble' && !q.evo){ q.vx *= .996; q.vy *= .996; }
     if (q.k === 'bubble' && q.evo){
-      // 소용돌이 거품: 화면 폭의 40% 정도만 나아가며 적을 끌고 간 뒤, 멈춰서 잠깐 빨아들이다 터져요
-      if (q.sx == null){ q.sx = q.x; q.sy = q.y; q.maxD = (vw / zoom) * .4; }
+      // 소용돌이 거품: 느리게 날아가며 화면 폭의 20% 정도만 나아가며 적을 끌고 간 뒤, 멈춰서 잠깐 빨아들이다 터져요
+      if (q.sx == null){ q.sx = q.x; q.sy = q.y; q.maxD = (vw / zoom) * .2; }
       const trav = Math.hypot(q.x - q.sx, q.y - q.sy);
       if (!q.stopped && trav >= q.maxD){ q.stopped = true; q.life = Math.min(q.life, 1.2); }
       if (q.stopped){ const k = Math.max(0, 1 - dt * 8); q.vx *= k; q.vy *= k; }
-      else if (trav > q.maxD * .7){ const k = Math.max(.35, 1 - (trav - q.maxD * .7) / (q.maxD * .3)); const sp = 125 * (S.projSpd || 1) * k, l = Math.hypot(q.vx, q.vy) || 1; q.vx = q.vx / l * sp; q.vy = q.vy / l * sp; }
+      else if (trav > q.maxD * .7){ const k = Math.max(.35, 1 - (trav - q.maxD * .7) / (q.maxD * .3)); const sp = 62.5 * (S.projSpd || 1) * k, l = Math.hypot(q.vx, q.vy) || 1; q.vx = q.vx / l * sp; q.vy = q.vy / l * sp; }
       const pull = q.r * 3, far = Math.hypot(q.x - G.p.x, q.y - G.p.y) > 70;
-      // 거품 하나가 빨아들이는 적은 최대 5마리
+      // 거품 하나가 빨아들이는 적은 최대 3마리
       if (!q.caught) q.caught = new Set();
       for (const e of q.caught) if (e.dead || Math.hypot(q.x - e.x, q.y + 12 - e.y) > pull * 1.4) q.caught.delete(e);
       query(q.x, q.y + 12, pull + 20, e => {
         if (e.boss) return;
         const dx = q.x - e.x, dy = q.y + 12 - e.y, d = Math.hypot(dx, dy) || 1;
-        if (d < pull && !q.caught.has(e) && q.caught.size < 5) q.caught.add(e);
+        if (d < pull && !q.caught.has(e) && q.caught.size < 3) q.caught.add(e);
         if (d < pull && q.caught.has(e)){
           if (d > 6){ e.x += dx / d * 95 * dt; e.y += dy / d * 95 * dt; }
           if (far){ e.x += q.vx * .85 * dt; e.y += q.vy * .85 * dt; }
