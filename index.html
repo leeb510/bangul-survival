@@ -200,6 +200,24 @@ body.touch .card .key{display:none}
 @media (max-width:540px){.card{flex-direction:row;text-align:left;align-items:center}.card .cbody{align-items:flex-start}}
 .cbody{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 
+.shoptabs{align-self:flex-start}
+.shoptabs button{font-size:16px;padding:5px 16px}
+.cosnow{display:flex;gap:14px;align-items:center}
+.cosnow canvas{width:110px;height:110px;flex:0 0 auto;border-radius:50%;border:3px solid var(--ink)}
+.cosmsg{margin:6px 0 0;font-family:var(--font-display);font-size:15px;color:#2f8f72;min-height:1.2em}
+.cosgrp{display:flex;flex-direction:column;gap:6px}
+.cosgrp .sethead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cosgrp small{font-family:var(--font-body);font-size:12px;color:var(--soft);letter-spacing:0}
+.cosprice .candy{font-size:14px}
+.coslist{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;touch-action:pan-x}
+.cositem{flex:0 0 112px;display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border:2.5px solid var(--ink);border-radius:16px;box-shadow:0 3px 0 var(--ink);padding:6px 6px 8px;cursor:pointer;color:var(--ink);font-family:var(--font-body)}
+.cositem canvas{width:96px;height:96px;border-radius:12px}
+.cositem .cn2{font-family:var(--font-display);font-size:13px;white-space:nowrap}
+.cositem .cst{font-family:var(--font-display);font-size:12px;background:var(--sun);border:2px solid var(--ink);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.cositem.own .cst{background:var(--mint)}
+.cositem.on{background:#fff3c4;outline:3px solid var(--pink);outline-offset:1px}
+.cositem.on .cst{background:var(--pink);color:#fff}
+.cositem.ask .cst{background:var(--pink);color:#fff}
 .shop{display:grid;gap:8px;width:100%;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
 @media (max-width:420px){.shop{grid-template-columns:1fr}}
 .sinfo{min-width:0}
@@ -456,7 +474,7 @@ function load(k, d){ try { const v = localStorage.getItem(k); return v === null 
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 const metaRaw = load('bangul.sv.meta', {}) || {};
 const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0, mproj:0 }, metaRaw.up || {}),
-  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:15 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [] };
+  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:15 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [], ownedCos: metaRaw.ownedCos || [], equip: Object.assign({ aurora:null, wings:null, face:null }, metaRaw.equip || {}) };
 const saveMeta = () => save('bangul.sv.meta', meta);
 let muted = load('bangul.muted', false);
 const settings = Object.assign({ bgm:70, sfx:80, view:1, orient:'landscape' }, load('bangul.sv.settings', {}) || {});
@@ -1009,7 +1027,7 @@ function fire(w, D, L){
     for (let i = 0; i < n; i++){
       const a = tg[i] ? Math.atan2(tg[i].y - p.y, tg[i].x - p.x) : base + (i - (n - 1) / 2) * .5;
       G.proj.push({ k:'boomerang', evo:E, x:p.x, y:p.y - 12, dx:Math.cos(a), dy:Math.sin(a), vx:Math.cos(a) * sp, vy:Math.sin(a) * sp,
-        acc: (E ? 470 / 3 : 540) * PS, dmg: (E ? 36 * EVO_POWER * EM : D.dmg[L]) * SM, r:(E ? 18.2 : 9) * S.area, life: E ? 6 : 3, back:false, hit:new Set(), rot:0 });
+        acc: (E ? 470 / 3 : 540) * PS, dmg: (E ? 34.2 * EVO_POWER * EM : D.dmg[L]) * SM, r:(E ? 18.2 : 9) * S.area, life: E ? 6 : 3, back:false, hit:new Set(), rot:0 });
     }
     sfx('swing', 80);
   } else if (w.id === 'water'){
@@ -1028,7 +1046,7 @@ function fire(w, D, L){
     for (let i = 0; i < n; i++){
       const a = w.a + i * TAU / n;
       G.proj.push({ k:'note', evo:E, x:p.x, y:p.y - 12, vx:Math.cos(a) * 220 * PS, vy:Math.sin(a) * 220 * PS, dmg: (E ? 26 * EVO_POWER * EM : D.dmg[L]) * SM, pierce: E ? 3 : D.pierce[L],
-        life: E ? 1.3 : 1.1, r:(E ? 9 : 7) * S.area, hit:new Set(), rot:0, t:0, col:cols[i % 4] });
+        life: E ? 1.3 : 1.1, r:(E ? 9.9 : 7) * S.area, hit:new Set(), rot:0, t:0, col:cols[i % 4] });
     }
     sfx('note', 80);
   }
@@ -1087,10 +1105,14 @@ function updateProj(dt){
       if (q.stopped){ const k = Math.max(0, 1 - dt * 8); q.vx *= k; q.vy *= k; }
       else if (trav > q.maxD * .7){ const k = Math.max(.35, 1 - (trav - q.maxD * .7) / (q.maxD * .3)); const sp = 125 * (S.projSpd || 1) * k, l = Math.hypot(q.vx, q.vy) || 1; q.vx = q.vx / l * sp; q.vy = q.vy / l * sp; }
       const pull = q.r * 3, far = Math.hypot(q.x - G.p.x, q.y - G.p.y) > 70;
+      // 거품 하나가 빨아들이는 적은 최대 5마리
+      if (!q.caught) q.caught = new Set();
+      for (const e of q.caught) if (e.dead || Math.hypot(q.x - e.x, q.y + 12 - e.y) > pull * 1.4) q.caught.delete(e);
       query(q.x, q.y + 12, pull + 20, e => {
         if (e.boss) return;
         const dx = q.x - e.x, dy = q.y + 12 - e.y, d = Math.hypot(dx, dy) || 1;
-        if (d < pull){
+        if (d < pull && !q.caught.has(e) && q.caught.size < 5) q.caught.add(e);
+        if (d < pull && q.caught.has(e)){
           if (d > 6){ e.x += dx / d * 95 * dt; e.y += dy / d * 95 * dt; }
           if (far){ e.x += q.vx * .85 * dt; e.y += q.vy * .85 * dt; }
         }
@@ -1494,6 +1516,210 @@ function paintIcons(root){
     drawIcon(c.dataset.icon, 24, 24, 1, c.dataset.evo === '1');
     X = prev;
   });
+}
+
+/* ---------- 치장템 (오로라 · 날개 · 표정) ---------- */
+const AURORAS = {
+  rainbow:  { name:'무지개 오로라', cols:['#ff8fc5', '#ffd166', '#7ee8c0', '#7fd3ff', '#b48cff'] },
+  starlight:{ name:'별빛 오로라',   cols:['#b48cff', '#7c6cf0', '#ffe28a', '#c9a7ff'] },
+  mint:     { name:'민트 오로라',   cols:['#7ee8c0', '#9fe8ff', '#e6fffa', '#4fd1b5'] },
+};
+function drawAurora(kind, t){
+  const A = AURORAS[kind], n = A.cols.length;
+  X.save();
+  // 바닥 빛 고리
+  glow(0, -2, 34, A.cols[0], .45);
+  for (let k = 0; k < n; k++){
+    const s = 1 - k * .14, c = A.cols[(k + Math.floor(t * 2)) % n];
+    ell(0, 0, 27 * s, 9.5 * s); X.fillStyle = c; X.globalAlpha = .55; X.fill();
+  }
+  X.globalAlpha = 1;
+  // 올라가는 오로라 커튼
+  for (let k = 0; k < n; k++){
+    const x0 = -22 + k * (44 / (n - 1)), hgt = 30 + 9 * Math.sin(t * 2 + k * 1.3);
+    const g = X.createLinearGradient(0, 0, 0, -hgt);
+    g.addColorStop(0, A.cols[k]); g.addColorStop(1, 'rgba(255,255,255,0)');
+    X.globalAlpha = .6; X.fillStyle = g;
+    X.beginPath(); X.moveTo(x0 - 5, 0); X.quadraticCurveTo(x0 - 6 + Math.sin(t * 3 + k) * 3, -hgt * .6, x0, -hgt); X.quadraticCurveTo(x0 + 7 + Math.sin(t * 3 + k) * 3, -hgt * .6, x0 + 5, 0); X.closePath(); X.fill();
+  }
+  X.globalAlpha = 1;
+  // 반짝이
+  for (let k = 0; k < 5; k++){
+    const ph = (t * .6 + k / 5) % 1, x = Math.sin(k * 2.3) * 16, y = -ph * 30;
+    X.globalAlpha = Math.sin(ph * Math.PI); starPath(x, y, 2.2, 4, .4); X.fillStyle = '#ffffff'; X.fill();
+  }
+  X.globalAlpha = 1;
+  X.restore();
+}
+const WINGS = {
+  angel1:  { name:'천사 날개',       type:'angel',  fill:'#ffffff', line:'#9fb0cf', detail:'#c9d4ea', halo:'#ffd84a', haloIn:'#fff3a8' },
+  angel2:  { name:'황금 천사 날개',   type:'angel',  fill:'#fff1c2', line:'#d1a033', detail:'#e8c779', halo:'#ffc21a', haloIn:'#fff1a0' },
+  devil1:  { name:'악마 날개',       type:'devil',  fill:'#26213a', slit:'#ffffff', horn:'#26213a' },
+  devil2:  { name:'붉은 악마 날개',   type:'devil',  fill:'#d8343a', slit:'#ffffff', horn:'#d8343a' },
+  butter1: { name:'푸른 나비 날개',   type:'butter', top:'#5fb8ff', bot:'#9fdcff', spot:'#ffffff', edge:'#2d5fa8' },
+  butter2: { name:'꽃잎 나비 날개',   type:'butter', top:'#ff9fc8', bot:'#ffd166', spot:'#ffffff', edge:'#d0507f' },
+};
+function drawWing(W, side, flap){
+  // side: -1 왼쪽, 1 오른쪽. 어깨(±7, -15) 기준으로 그려요
+  X.save(); X.translate(side * 7, -15); X.scale(side, 1); X.rotate(-.15 - flap * .25);
+  X.lineJoin = 'round'; X.lineCap = 'round';
+  if (W.type === 'angel'){
+    // 하얀 깃털 날개: 위로 길게 뻗고, 아래쪽은 긴 깃털 끝이 층층이 내려와요
+    const A = [8, -6];
+    const TIPS = [[46, -27], [45, -15], [40, -5], [32, 3], [23, 8], [13, 10], [4, 8]];
+    const toward = (pt, k) => [pt[0] + (A[0] - pt[0]) * k, pt[1] + (A[1] - pt[1]) * k];
+    const notch = (a, b) => toward([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], .3);
+    X.beginPath(); X.moveTo(-1, 3); X.bezierCurveTo(1, -16, 20, -30, 40, -32);
+    let cur = [40, -32];
+    for (let i = 0; i < TIPS.length; i++){
+      const tp = TIPS[i], nx = i < TIPS.length - 1 ? notch(tp, TIPS[i + 1]) : [1, 6];
+      const c1 = [tp[0] + (tp[0] - A[0]) * .06, tp[1] + (tp[1] - A[1]) * .06];
+      X.quadraticCurveTo(c1[0], c1[1], (tp[0] + nx[0]) / 2 + (tp[0] - A[0]) * .03, (tp[1] + nx[1]) / 2 + (tp[1] - A[1]) * .03);
+      X.lineTo(nx[0], nx[1]); cur = nx;
+    }
+    X.closePath();
+    X.fillStyle = W.fill; X.fill(); X.lineWidth = 2; X.strokeStyle = W.line; X.stroke();
+    // 깃털 결
+    X.strokeStyle = W.detail; X.lineWidth = 1.4; X.lineCap = 'round';
+    for (let i = 0; i < TIPS.length - 1; i++){ const n = notch(TIPS[i], TIPS[i + 1]), e = toward(n, .38); X.beginPath(); X.moveTo(n[0], n[1]); X.quadraticCurveTo((n[0] + e[0]) / 2 + 1.5, (n[1] + e[1]) / 2 - 1.5, e[0], e[1]); X.stroke(); }
+  } else if (W.type === 'devil'){
+    // 박쥐 날개: 위는 둥글게 솟고, 아래는 손가락 끝 사이가 오목하게 파여요
+    const TIPS = [[44, -28], [43, -11], [34, 2], [21, 8], [9, 8]];
+    X.beginPath(); X.moveTo(-1, 2); X.bezierCurveTo(4, -14, 22, -26, 44, -28);
+    for (let i = 1; i < TIPS.length; i++){
+      const a = TIPS[i - 1], b = TIPS[i], m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      X.quadraticCurveTo(m[0] + (6 - m[0]) * .22, m[1] + (-8 - m[1]) * .22, b[0], b[1]);
+    }
+    X.quadraticCurveTo(4, 5, 0, 6); X.closePath();
+    X.fillStyle = W.fill; X.fill(); X.lineWidth = 2.2; X.strokeStyle = INK; X.lineJoin = 'round'; X.stroke();
+    // 하얀 갈래 무늬
+    X.strokeStyle = W.slit; X.lineWidth = 1.5; X.lineCap = 'round'; X.globalAlpha = .9;
+    for (const tp of TIPS.slice(1, 4)){ const s0 = [8 + (tp[0] - 8) * .35, -6 + (tp[1] + 6) * .35], s1 = [8 + (tp[0] - 8) * .72, -6 + (tp[1] + 6) * .72]; X.beginPath(); X.moveTo(s0[0], s0[1]); X.quadraticCurveTo((s0[0] + s1[0]) / 2 + 1.5, (s0[1] + s1[1]) / 2 - 1.5, s1[0], s1[1]); X.stroke(); }
+    X.globalAlpha = 1;
+  } else {
+    X.beginPath(); X.moveTo(0, -2); X.bezierCurveTo(4, -22, 30, -26, 28, -8); X.bezierCurveTo(26, 0, 12, 2, 0, 2); X.closePath();
+    X.fillStyle = W.top; X.fill(); X.lineWidth = 2.2; X.strokeStyle = W.edge; X.stroke();
+    X.beginPath(); X.moveTo(0, 2); X.bezierCurveTo(10, 2, 24, 6, 18, 16); X.bezierCurveTo(12, 22, 2, 14, 0, 4); X.closePath();
+    X.fillStyle = W.bot; X.fill(); X.lineWidth = 2.2; X.strokeStyle = W.edge; X.stroke();
+    X.fillStyle = W.spot; for (const [a, b, r] of [[20, -12, 2.6], [14, -16, 1.8], [24, -6, 1.6], [12, 10, 2]]){ X.beginPath(); X.arc(a, b, r, 0, TAU); X.fill(); }
+    X.strokeStyle = W.edge; X.lineWidth = 1.2; X.globalAlpha = .6; X.beginPath(); X.moveTo(2, 0); X.quadraticCurveTo(14, -8, 24, -10); X.moveTo(2, 2); X.quadraticCurveTo(10, 6, 15, 13); X.stroke(); X.globalAlpha = 1;
+  }
+  X.restore();
+}
+function drawWings(kind, t, bob){
+  const W = WINGS[kind], flap = Math.sin(t * (W.type === 'butter' ? 7 : 4)) * .5 + .5;
+  X.save(); X.translate(0, -bob); X.translate(0, -15); X.scale(.78, .78); X.translate(0, 15);
+  drawWing(W, -1, flap); drawWing(W, 1, flap);
+  X.restore();
+}
+function drawWingTop(kind, t, bob){
+  const W = WINGS[kind];
+  if (W.type === 'angel'){
+    const y = -40 - bob + Math.sin(t * 2.4) * 1.2;
+    ell(0, y, 10, 3.4); X.lineWidth = 5.2; X.strokeStyle = INK; X.stroke();
+    ell(0, y, 10, 3.4); X.lineWidth = 3.4; X.strokeStyle = W.halo; X.stroke();
+    ell(0, y - .5, 9, 2.6); X.lineWidth = 1.2; X.strokeStyle = W.haloIn; X.stroke();
+    X.fillStyle = '#ffffff';
+    for (const [sx, sy, r] of [[-14, y - 4, 1.8], [13, y - 6, 2.2], [-6, y - 9, 1.4], [8, y + 6, 1.2]]){ X.save(); X.translate(sx, sy); starPath(0, 0, r, 4, .35); X.fill(); X.restore(); }
+  } else if (W.type === 'devil'){
+    for (const sd of [-1, 1]){
+      X.save(); X.translate(sd * 7.5, -20.5 - bob); X.scale(sd, 1);
+      X.beginPath(); X.moveTo(-4, 1.5); X.quadraticCurveTo(-3.5, -8, 5, -13); X.quadraticCurveTo(1.5, -6, 3.5, 1); X.quadraticCurveTo(0, 2.5, -4, 1.5); X.closePath();
+      X.fillStyle = W.horn; X.fill(); X.lineWidth = 1.8; X.strokeStyle = INK; X.lineJoin = 'round'; X.stroke();
+      X.fillStyle = 'rgba(255,255,255,.35)'; X.beginPath(); X.moveTo(-2, -1); X.quadraticCurveTo(-1.5, -6, 2.5, -9.5); X.quadraticCurveTo(-.2, -5, .2, -1); X.closePath(); X.fill();
+      X.restore();
+    }
+  }
+}
+const FACES = {
+  smile: { name:'활짝 웃음' },
+  star:  { name:'반짝반짝 별눈' },
+  heart: { name:'하트 뿅뿅' },
+  cry:   { name:'훌쩍훌쩍' },
+  cool:  { name:'멋쟁이 선글라스' },
+};
+function drawFace(kind, t, bob){
+  X.save(); X.translate(0, -13 - bob);
+  X.lineCap = 'round'; X.lineJoin = 'round';
+  const blush = (a = .55, r = 2.6) => { X.fillStyle = `rgba(255,111,159,${a})`; ell(-7.8, 3, r, r * .65); X.fill(); ell(7.8, 3, r, r * .65); X.fill(); };
+  const smileArc = (w = 1.9, y = 2.6) => { X.strokeStyle = INK; X.lineWidth = 1.6; X.beginPath(); X.arc(0, y, w, .15 * Math.PI, .85 * Math.PI); X.stroke(); };
+  const eye = x => { X.fillStyle = INK; ell(x, -1, 2, 2.5); X.fill(); X.fillStyle = '#fff'; ell(x - .5, -2, .8, .8); X.fill(); };
+  if (kind === 'smile'){
+    X.strokeStyle = INK; X.lineWidth = 1.9;
+    for (const ex of [-4.4, 4.4]){ X.beginPath(); X.arc(ex, .3, 2.4, Math.PI * 1.12, Math.PI * 1.88); X.stroke(); }
+    blush(.7, 3);
+    X.beginPath(); X.moveTo(-3.4, 2); X.quadraticCurveTo(0, 2.6, 3.4, 2); X.quadraticCurveTo(2.6, 7.6, 0, 7.6); X.quadraticCurveTo(-2.6, 7.6, -3.4, 2); X.closePath();
+    X.fillStyle = '#7a2f4a'; X.fill(); X.lineWidth = 1.5; X.strokeStyle = INK; X.stroke();
+    X.save(); X.clip(); X.fillStyle = '#ff8fb0'; ell(0, 7, 2.4, 1.8); X.fill(); X.restore();
+  } else if (kind === 'star'){
+    for (const ex of [-4.4, 4.4]){
+      const tw = 1 + Math.sin(t * 6 + ex) * .08;
+      X.save(); X.translate(ex, -1); X.scale(tw, tw); drawStar(0, 0, 3.4, '#ffd166', 1.3); X.fillStyle = '#fff'; X.beginPath(); X.arc(-.9, -1, .7, 0, TAU); X.fill(); X.restore();
+    }
+    blush(); smileArc(2.2, 2.4);
+    X.fillStyle = '#fff3a8'; for (const [sx, sy] of [[-9.5, -6], [9.5, -7]]){ X.save(); X.translate(sx, sy); starPath(0, 0, 1.5, 4, .35); X.fill(); X.restore(); }
+  } else if (kind === 'heart'){
+    for (const ex of [-4.4, 4.4]){
+      const pul = 1 + Math.sin(t * 5) * .1;
+      X.save(); X.translate(ex, -1); X.scale(pul, pul); heartPath(0, .4, 3.1); fs('#ff5d7a', 1.3); X.fillStyle = 'rgba(255,255,255,.75)'; ell(-1.1, -.9, .8, .55, -.6); X.fill(); X.restore();
+    }
+    blush(.7, 3);
+    X.beginPath(); X.moveTo(-2.4, 2.4); X.quadraticCurveTo(0, 6.4, 2.4, 2.4); X.closePath(); X.fillStyle = '#7a2f4a'; X.fill(); X.lineWidth = 1.4; X.strokeStyle = INK; X.stroke();
+  } else if (kind === 'cry'){
+    // 으앙~ 귀엽게 우는 얼굴: 처진 눈썹, > < 눈, 줄줄 흐르는 눈물, 입꼬리 내려간 입
+    blush(.6, 2.8);
+    X.strokeStyle = INK; X.lineWidth = 2;
+    X.beginPath(); X.moveTo(-6.6, -3.6); X.lineTo(-3.2, -1.8); X.lineTo(-6.6, 0); X.stroke();
+    X.beginPath(); X.moveTo(6.6, -3.6); X.lineTo(3.2, -1.8); X.lineTo(6.6, 0); X.stroke();
+    // 눈물 줄기 (볼 위로 흘러내림)
+    for (const ex of [-5.4, 5.4]){
+      X.beginPath(); X.moveTo(ex - 1.5, .6); X.quadraticCurveTo(ex - 1.9, 6, ex - .9, 10.6); X.lineTo(ex + .9, 10.6); X.quadraticCurveTo(ex + 1.9, 6, ex + 1.5, .6); X.closePath();
+      X.fillStyle = '#8fd6ff'; X.fill(); X.lineWidth = 1; X.strokeStyle = '#3f8fc4'; X.stroke();
+      X.fillStyle = 'rgba(255,255,255,.8)'; rr(ex - .9, 1.6, .9, 5, .45); X.fill();
+    }
+    const wob = Math.sin(t * 14) * .3;
+    X.beginPath(); X.moveTo(-3.4, 6.8); X.quadraticCurveTo(-2.6, 2 + wob, 0, 2.2 + wob); X.quadraticCurveTo(2.6, 2 + wob, 3.4, 6.8); X.quadraticCurveTo(0, 7.8, -3.4, 6.8); X.closePath();
+    X.fillStyle = '#7a2f4a'; X.fill(); X.lineWidth = 1.5; X.strokeStyle = INK; X.stroke();
+    X.save(); X.clip(); X.fillStyle = '#ff8fb0'; ell(0, 7.3, 2, 1.4); X.fill(); X.restore();
+    // 튀는 눈물방울
+    for (const [sd, ph0] of [[-1, 0], [1, .45]]){
+      const ph = (t * 1.1 + ph0) % 1, dx = sd * (8.5 + ph * 6), dy = -3 - Math.sin(ph * Math.PI) * 4 + ph * 5;
+      X.globalAlpha = 1 - ph * .7;
+      X.beginPath(); X.moveTo(dx, dy - 2.6); X.quadraticCurveTo(dx + 1.6, dy, dx, dy + 1.2); X.quadraticCurveTo(dx - 1.6, dy, dx, dy - 2.6); X.closePath();
+      X.fillStyle = '#8fd6ff'; X.fill(); X.lineWidth = .9; X.strokeStyle = '#3f8fc4'; X.stroke();
+      X.globalAlpha = 1;
+    }
+  } else if (kind === 'cool'){
+    blush(.45);
+    for (const ex of [-4.6, 4.6]){ rr(ex - 3.8, -3.6, 7.6, 5, 2.2); X.fillStyle = '#1f1b33'; X.fill(); X.lineWidth = 1.3; X.strokeStyle = INK; X.stroke();
+      X.strokeStyle = 'rgba(255,255,255,.75)'; X.lineWidth = 1; X.beginPath(); X.moveTo(ex - 2.2, -2.4); X.lineTo(ex - .6, -2.4); X.stroke(); }
+    X.strokeStyle = INK; X.lineWidth = 1.5; X.beginPath(); X.moveTo(-.8, -2.2); X.quadraticCurveTo(0, -3, .8, -2.2); X.stroke();
+    X.beginPath(); X.moveTo(-8.4, -2.4); X.lineTo(-11.4, -3.2); X.moveTo(8.4, -2.4); X.lineTo(11.4, -3.2); X.stroke();
+    X.lineWidth = 1.6; X.beginPath(); X.moveTo(-2, 3.4); X.quadraticCurveTo(.8, 4.6, 2.8, 2.2); X.stroke();
+  }
+  X.restore();
+}
+const COS_PRICE = { aurora:1000, wings:1000, face:500 };
+const COS_LIST = [
+  ...Object.keys(AURORAS).map(id => ({ slot:'aurora', id, name:AURORAS[id].name })),
+  ...Object.keys(WINGS).map(id => ({ slot:'wings', id, name:WINGS[id].name })),
+  ...Object.keys(FACES).map(id => ({ slot:'face', id, name:FACES[id].name })),
+];
+const cosKey = it => it.slot + ':' + it.id;
+// 장착한 치장템을 입힌 캐릭터 그리기 (x, y = 발밑)
+function drawDressedChar(x, y, fx, fy, walk, moving, t, ch, eq, groundOnly){
+  eq = eq || meta.equip;
+  const bob = moving ? Math.abs(Math.sin(walk * 13)) * 2.4 : Math.sin(t * 3) * .7;
+  X.save(); X.translate(x, y);
+  if (eq.aurora) drawAurora(eq.aurora, t);
+  if (eq.wings) drawWings(eq.wings, t, bob);
+  X.restore();
+  const showFace = eq.face && fy > -.75;
+  drawBangul(x, y, fx, showFace ? -1 : fy, walk, moving, t, ch);
+  X.save(); X.translate(x, y);
+  if (showFace){ X.translate(fx * 3.4, Math.max(0, fy) * 1.6); drawFace(eq.face, t, bob); X.translate(-fx * 3.4, -Math.max(0, fy) * 1.6); }
+  if (eq.wings) drawWingTop(eq.wings, t, bob);
+  X.restore();
 }
 
 /* ---------- sprites (local coords, feet at 0,0) ---------- */
@@ -1904,7 +2130,7 @@ function render(rt){
     else if (type === 1) drawItem(o, rt);
     else {
       if (p.inv > 0 && Math.floor(rt * 18) % 2) X.globalAlpha = .45;
-      drawBangul(p.x, p.y, p.fx, p.fy, p.walk, p.moving, rt, G.ch);
+      drawDressedChar(p.x, p.y, p.fx, p.fy, p.walk, p.moving, rt, G.ch);
       X.globalAlpha = 1;
       rr(p.x - 16, p.y + 5, 32, 6, 3); X.fillStyle = 'rgba(58,46,95,.55)'; X.fill();
       const hw = 30 * Math.max(0, p.hp / p.maxHp);
@@ -2100,7 +2326,60 @@ function drawHUD(rt){
 
 /* ---------- screens ---------- */
 const screenEl = $('screen');
-let heroCv = null, bookBack = 'title', settingsBack = 'title', charsScroll = null;
+let heroCv = null, bookBack = 'title', settingsBack = 'title', charsScroll = null, shopTab = 'up';
+const shopTabsHtml = () => `<div class="seg shoptabs" role="tablist"><button data-tab="up" aria-pressed="${shopTab === 'up'}">능력 강화</button><button data-tab="cos" aria-pressed="${shopTab === 'cos'}">치장</button></div>`;
+function wireShopTabs(){ screenEl.querySelectorAll('.shoptabs button').forEach(b => b.addEventListener('click', () => { if (shopTab === b.dataset.tab) return; shopTab = b.dataset.tab; setScreen('shop'); })); }
+function renderCosShop(){
+  const ch = CHARS[selChar], groups = [['aurora', '오로라', '발밑에 깔려요'], ['wings', '날개', '등 뒤에 달려요'], ['face', '표정', '얼굴이 바뀌어요']];
+  screenEl.innerHTML = `<div class="panel" style="max-width:900px"><div class="txt">
+    <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
+    ${shopTabsHtml()}
+    <div class="cosnow"><canvas id="cosPrev" width="220" height="220" aria-hidden="true"></canvas><div><p class="lead" style="margin:0">능력치 변화 없이 꾸미기만 해요. 오로라·날개·표정을 하나씩 동시에 착용할 수 있고, 모든 캐릭터에 함께 적용돼요.</p>
+    <p class="cosmsg" id="cosMsg" aria-live="polite"></p></div></div>
+    ${groups.map(([slot, label, hint]) => `<div class="cosgrp"><p class="sethead">${label} <span class="cosprice">${candyHtml(COS_PRICE[slot])}</span> <small>${hint}</small></p><div class="coslist">${COS_LIST.filter(it => it.slot === slot).map(it => {
+      const own = meta.ownedCos.includes(cosKey(it)), on = meta.equip[slot] === it.id;
+      return `<button class="cositem${on ? ' on' : ''}${own ? ' own' : ''}" data-slot="${slot}" data-id="${it.id}"><canvas width="140" height="140" data-cos="${cosKey(it)}" aria-hidden="true"></canvas><span class="cn2">${it.name}</span><span class="cst">${on ? '착용 중' : own ? '착용하기' : '별사탕 ' + COS_PRICE[slot]}</span></button>`; }).join('')}</div></div>`).join('')}
+    <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
+  </div></div>`;
+  paintIcons(screenEl);
+  screenEl.querySelectorAll('canvas[data-cos]').forEach(cv2 => {
+    const [slot, id] = cv2.dataset.cos.split(':'), prev = X; X = cv2.getContext('2d');
+    X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, 140, 140);
+    X.fillStyle = slot === 'aurora' && id === 'starlight' ? '#5f5799' : '#e9f7ff'; rr(0, 0, 140, 140, 18); X.fill();
+    const sc = slot === 'face' ? 3.2 : slot === 'wings' ? 1.45 : 2.1; X.setTransform(sc, 0, 0, sc, 70, slot === 'face' ? 118 : slot === 'wings' ? 114 : 112);
+    drawDressedChar(0, 0, 0, .5, 0, false, 1, ch, { aurora:slot === 'aurora' ? id : null, wings:slot === 'wings' ? id : null, face:slot === 'face' ? id : null });
+    X = prev;
+  });
+  const msg = t => { const el = $('cosMsg'); if (el) el.textContent = t; };
+  screenEl.querySelectorAll('.cositem').forEach(b => {
+    let armed = false;
+    b.addEventListener('click', () => {
+      const slot = b.dataset.slot, id = b.dataset.id, it = COS_LIST.find(x => x.slot === slot && x.id === id), key = cosKey(it); ensureAudio();
+      if (!meta.ownedCos.includes(key)){
+        const cost = COS_PRICE[slot];
+        if (meta.coins < cost){ msg(`별사탕이 부족해요 (${meta.coins}/${cost})`); sfx('hurt'); return; }
+        if (!armed){ armed = true; b.querySelector('.cst').textContent = '한 번 더 눌러 구매'; b.classList.add('ask'); sfx('gem'); return; }
+        meta.coins -= cost; meta.ownedCos.push(key); meta.equip[slot] = id; saveMeta(); sfx('chest'); setScreen('shop'); msg(`${it.name}을(를) 사서 착용했어요!`); return;
+      }
+      meta.equip[slot] = meta.equip[slot] === id ? null : id; saveMeta(); sfx('buy'); setScreen('shop');
+      msg(meta.equip[slot] ? `${it.name} 착용!` : `${it.name}을(를) 벗었어요`);
+    });
+  });
+  wireShopTabs();
+  $('bBack').addEventListener('click', () => { shopTab = 'up'; state = 'title'; setScreen('title'); });
+  cosPrevCv = $('cosPrev');
+}
+let cosPrevCv = null;
+function drawCosPrev(rt){
+  if (!cosPrevCv || !cosPrevCv.isConnected) return;
+  const prev = X; X = cosPrevCv.getContext('2d');
+  X.setTransform(1, 0, 0, 1, 0, 0); X.clearRect(0, 0, 220, 220);
+  X.fillStyle = '#b8ecf7'; X.beginPath(); X.arc(110, 110, 108, 0, TAU); X.fill();
+  X.fillStyle = stageBase().ground; X.beginPath(); X.ellipse(110, 190, 120, 40, 0, 0, TAU); X.fill();
+  X.setTransform(2.4, 0, 0, 2.4, 110, 168);
+  drawDressedChar(0, 0, Math.sin(rt * .8) * .5, .5, 0, false, rt, CHARS[selChar]);
+  X = prev;
+}
 const GEAR = '<svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M11.3 1.5l.4 2.1a6.6 6.6 0 0 1 1.6.9l2-.8 1.3 2.3-1.6 1.4a6.7 6.7 0 0 1 0 1.8l1.6 1.4-1.3 2.3-2-.8a6.6 6.6 0 0 1-1.6.9l-.4 2.1H8.7l-.4-2.1a6.6 6.6 0 0 1-1.6-.9l-2 .8-1.3-2.3L5 10.1a6.7 6.7 0 0 1 0-1.8L3.4 6.9l1.3-2.3 2 .8a6.6 6.6 0 0 1 1.6-.9l.4-2.1h2.6zM10 6.8a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/></svg>';
 const pips = (l, max = 5) => '●'.repeat(l) + '○'.repeat(max - l);
 const candyHtml = n => `<span class="candy"><canvas width="44" height="44" data-icon="candy" aria-hidden="true"></canvas>${n}</span>`;
@@ -2141,8 +2420,10 @@ function setScreen(kind){
     screenEl.insertAdjacentHTML('beforeend', '<div class="credit">제작자 Leeb</div>');
     paintIcons(screenEl);
   } else if (kind === 'shop'){
+    if (shopTab === 'cos'){ renderCosShop(); return; }
     screenEl.innerHTML = `<div class="panel" style="max-width:860px"><div class="txt">
       <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
+      ${shopTabsHtml()}
       <p class="lead">한 번 산 강화는 모든 판에 계속 적용돼요.</p>
       ${(() => { const on = META_DEF.filter(m => (meta.up[m.id] || 0) > 0); return `<div class="sumbox"><span class="sumlab">지금 적용 중</span>${on.length ? on.map(m => `<span class="sumchip">${m.tot(Math.min(meta.up[m.id], m.max || META_MAX))}</span>`).join('') : '<span class="none">아직 산 강화가 없어요</span>'}</div>`; })()}
       <div class="shop">${META_DEF.map(m => {
@@ -2153,12 +2434,13 @@ function setScreen(kind){
       <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
     </div></div>`;
     paintIcons(screenEl);
+    wireShopTabs();
     screenEl.querySelectorAll('.buy:not([type="submit"])').forEach(b => b.addEventListener('click', () => {
       const m = META_DEF.find(m => m.id === b.dataset.id), lv = meta.up[m.id];
       if (lv >= (m.max || META_MAX) || meta.coins < m.cost[lv]) return;
       meta.coins -= m.cost[lv]; meta.up[m.id]++; saveMeta(); ensureAudio(); sfx('buy'); setScreen('shop'); toast(`${m.name} ${meta.up[m.id]}단계! 지금 ${m.tot(meta.up[m.id])}`);
     }));
-    $('bBack').addEventListener('click', () => { couponMsg = null; state = 'title'; setScreen('title'); });
+    $('bBack').addEventListener('click', () => { couponMsg = null; shopTab = 'up'; state = 'title'; setScreen('title'); });
   } else if (kind === 'pause'){
     const owned = [...G.weapons.map(w => w.evo ? `${EVO[w.id].name} (진화${w.evoLv ? '+' + w.evoLv : ''})` : `${WPN[w.id].name} Lv.${w.lvl}`), ...Object.keys(G.passives).map(id => `${PAS[id].name} Lv.${G.passives[id]}`)];
     screenEl.innerHTML = `<div class="panel narrow"><div class="txt">
@@ -2317,7 +2599,7 @@ function drawHero(rt){
   }
   X.setTransform(4, 0, 0, 4, 120, 186);
   X.fillStyle = 'rgba(58,46,95,.18)'; ell(0, 0, 11, 4); X.fill();
-  drawBangul(0, 0, Math.sin(rt * .8) * .6, .5, rt * .5, false, rt, ch);
+  drawDressedChar(0, 0, Math.sin(rt * .8) * .6, .5, rt * .5, false, rt, ch);
   X = prev;
 }
 
@@ -2342,6 +2624,7 @@ function frame(now){
   if (toastT > 0){ toastT -= dt; if (toastT <= 0) $('toast').hidden = true; }
   render(rt);
   drawHero(rt);
+  drawCosPrev(rt);
   requestAnimationFrame(frame);
 }
 
@@ -2390,7 +2673,6 @@ const hot = window.claude?.hot;
 if (hot && hot.ready) hot.ready(start); else start();
 })();
 </script>
-
 <script>
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
