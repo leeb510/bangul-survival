@@ -2723,14 +2723,13 @@ function wireShopTabs(){ screenEl.querySelectorAll('.shoptabs button').forEach(b
 function renderCosShop(){
   const ch = CHARS[selChar], groups = [['aurora', '오로라', '발밑에 깔려요'], ['wings', '날개', '등 뒤에 달려요'], ['face', '표정', '얼굴이 바뀌어요']];
   screenEl.innerHTML = `<div class="panel" style="max-width:900px"><div class="txt">
-    <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
+    <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2><div class="row" style="gap:12px">${candyHtml(meta.coins)}<button class="big alt" id="bBack">돌아가기</button></div></div>
     ${shopTabsHtml()}
     <div class="cosnow"><canvas id="cosPrev" width="220" height="220" aria-hidden="true"></canvas><div><p class="lead" style="margin:0">능력치 변화 없이 꾸미기만 해요. 오로라·날개·표정을 하나씩 동시에 착용할 수 있고, 모든 캐릭터에 함께 적용돼요.</p>
     <p class="cosmsg" id="cosMsg" aria-live="polite"></p></div></div>
     ${groups.map(([slot, label, hint]) => `<div class="cosgrp"><p class="sethead">${label} <span class="cosprice">${candyHtml(COS_PRICE[slot])}</span> <small>${hint}</small></p><div class="coslist">${COS_LIST.filter(it => it.slot === slot).map(it => {
       const own = meta.ownedCos.includes(cosKey(it)), on = meta.equip[slot] === it.id;
       return `<button class="cositem${on ? ' on' : ''}${own ? ' own' : ''}" data-slot="${slot}" data-id="${it.id}"><canvas width="140" height="140" data-cos="${cosKey(it)}" aria-hidden="true"></canvas><span class="cn2">${it.name}</span><span class="cst">${on ? '착용 중' : own ? '착용하기' : '별사탕 ' + COS_PRICE[slot]}</span></button>`; }).join('')}</div></div>`).join('')}
-    <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
   </div></div>`;
   paintIcons(screenEl);
   screenEl.querySelectorAll('canvas[data-cos]').forEach(cv2 => {
@@ -2780,46 +2779,46 @@ const TROPHY = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="tru
 const ACH_TIERS = [['easy', '쉬움'], ['mid', '보통'], ['hard', '어려움'], ['top', '최고 난이도']];
 const allNormalCleared = () => NORMAL.every(i => meta.cleared[i]);
 const ACH = [
-  { n:1,  t:0, name:'첫 모험',           desc:'아무 스테이지에서 1분 버티기',                       r:15,  test:() => G && G.time >= 60 },
-  { n:2,  t:0, name:'꼬마 사냥꾼',       desc:'한 판에 몬스터 100마리 처치',                       r:25,  test:() => G && G.kills >= 100 },
-  { n:3,  t:0, name:'쑥쑥 자라요',       desc:'한 판에서 레벨 10 달성',                             r:25,  test:() => G && G.level >= 10 },
-  { n:4,  t:0, name:'첫 쇼핑',           desc:'별사탕 상점에서 강화 1번 구매',                      r:25,  test:() => META_DEF.some(m => (meta.up[m.id] || 0) > 0) },
-  { n:5,  t:0, name:'꾸미기 시작',       desc:'치장템 1개 구매',                                    r:25,  test:() => meta.ownedCos.length >= 1 },
-  { n:6,  t:0, name:'첫 클리어',         desc:'일반 1단계 클리어',                                  r:50,  test:() => meta.cleared[NORMAL[0]] },
-  { n:7,  t:1, name:'첫 진화',           desc:'무기 1개 진화',                                      r:50,  test:() => meta.stats.evo.length >= 1 },
-  { n:8,  t:1, name:'보스 사냥꾼',       desc:'중간 보스 누적 10마리 처치',                         r:75,  test:() => meta.stats.mid >= 10, prog:() => [meta.stats.mid, 10] },
-  { n:9,  t:1, name:'반환점',            desc:'일반 8단계 클리어',                                  r:100, test:() => meta.cleared[NORMAL[7]] },
-  { n:10, t:1, name:'새 친구',           desc:'해금 캐릭터 1명 해금',                               r:100, test:() => meta.unlockedChars.length >= 1 },
-  { n:11, t:1, name:'쌍둥이 진화',       desc:'한 판에서 진화 무기 2개 만들기',                     r:100, test:() => G && G.weapons.filter(w => w.evo).length >= 2 },
-  { n:12, t:1, name:'천 마리의 전설',    desc:'한 판에 몬스터 1,000마리 처치',                      r:100, test:() => G && G.kills >= 1000 },
-  { n:13, t:1, name:'별사탕 부자',       desc:'별사탕 누적 5,000개 모으기',                         r:150, test:() => meta.stats.candy >= 5000, prog:() => [meta.stats.candy, 5000] },
-  { n:14, t:2, name:'하드 입문',         desc:'하드 1단계 클리어',                                  r:150, test:() => meta.hardCleared[0] },
-  { n:15, t:2, name:'털끝 하나 안 다쳐', desc:'한 판에서 처음 5분 동안 한 번도 안 맞기',            r:200, test:() => G && G.time >= 300 && !G.hitOnce },
-  { n:16, t:2, name:'가시밭길',          desc:'챌린지 1 가시 정원 클리어',                          r:200, test:() => meta.cleared[CHALS[0]] },
-  { n:17, t:2, name:'일반 정복',         desc:'일반 15단계 모두 클리어',                            r:250, test:allNormalCleared, prog:() => [NORMAL.filter(i => meta.cleared[i]).length, NORMAL.length] },
-  { n:18, t:2, name:'외길 결투',         desc:'챌린지 2 외길 결투장 클리어',                        r:250, test:() => meta.cleared[CHALS[1]] },
-  { n:19, t:3, name:'진화 박사',         desc:'진화 무기 10종 모두 만들어 보기 (여러 판 합산)',     r:300, test:() => meta.stats.evo.length >= Object.keys(EVO).length, prog:() => [meta.stats.evo.length, Object.keys(EVO).length] },
-  { n:20, t:3, name:'하드 정복',         desc:'하드 15단계 클리어',                                 r:500, test:() => meta.hardCleared[HARD_COUNT - 1] },
-  { n:21, t:2, name:'만 마리의 전설',    desc:'몬스터 누적 10,000마리 처치',                        r:200, test:() => meta.stats.kills >= 10000, prog:() => [meta.stats.kills, 10000] },
-  { n:22, t:2, name:'강화 장인',         desc:'상점 강화 하나를 Lv.7까지 올리기',                   r:200, test:() => META_DEF.some(m => !m.max && (meta.up[m.id] || 0) >= META_MAX), prog:() => [Math.max(...META_DEF.filter(m => !m.max).map(m => meta.up[m.id] || 0)), META_MAX] },
-  { n:23, t:2, name:'최강 진화',         desc:'진화 무기를 +2까지 강화',                            r:200, test:() => G && G.weapons.some(w => w.evo && (w.evoLv || 0) >= EVO_PLUS_MAX) },
-  { n:24, t:2, name:'쑥쑥 무럭무럭',     desc:'한 판에서 레벨 50 달성',                             r:250, test:() => G && G.level >= 50 },
-  { n:25, t:2, name:'큰 바위 앞에서',    desc:'하드 6단계 클리어',                                  r:250, test:() => meta.hardCleared[5] },
-  { n:26, t:2, name:'3배속 질주',        desc:'처음부터 끝까지 3배속으로 일반 15단계 클리어',        r:250, test:() => G && G.achWin && !G.st.hard && G.stage === LAST_NORMAL && !G.slowSpd },
-  { n:27, t:2, name:'모두 모여라',       desc:'해금 캐릭터 모두 해금',                              r:300, test:() => CHARS.filter(c => c.cost).every(c => meta.unlockedChars.includes(c.id)), prog:() => [CHARS.filter(c => c.cost && meta.unlockedChars.includes(c.id)).length, CHARS.filter(c => c.cost).length] },
-  { n:28, t:2, name:'삼천 마리의 함성',  desc:'한 판에 몬스터 3,000마리 처치',                      r:300, test:() => G && G.kills >= 3000 },
-  { n:29, t:2, name:'다시 뽑기는 사치',  desc:'다시 뽑기 한 번도 안 쓰고 하드 단계 클리어',         r:300, test:() => G && G.achWin && G.st.hard && !G.rerollUsed },
-  { n:30, t:2, name:'진화 4총사',        desc:'한 판에서 무기 4개 모두 진화',                       r:350, test:() => G && G.weapons.length >= 4 && G.weapons.every(w => w.evo) },
-  { n:31, t:3, name:'벽 너머로',         desc:'하드 11단계 클리어',                                 r:350, test:() => meta.hardCleared[10] },
-  { n:32, t:3, name:'날개 없이',         desc:'부활(날개 하트) 안 쓰고 하드 10단계 이상 클리어',    r:400, test:() => G && G.achWin && G.st.hard && G.stage >= 9 && !G.reviveUsed },
-  { n:33, t:3, name:'맨몸 승부',         desc:'물약·회복 사탕을 하나도 안 먹고 하드 단계 클리어',   r:400, test:() => G && G.achWin && G.st.hard && !G.healUsed },
-  { n:34, t:3, name:'아슬아슬',          desc:'체력 10% 이하인 상태로 마지막 왕 쓰러뜨리기',        r:400, test:() => G && G.bossLowHp },
-  { n:35, t:3, name:'꾸미기 장인',       desc:'치장템 14종 모두 모으기',                            r:400, test:() => meta.ownedCos.length >= COS_LIST.length, prog:() => [meta.ownedCos.length, COS_LIST.length] },
-  { n:36, t:3, name:'번개 처치',         desc:'하드에서 마지막 왕이 나타나고 60초 안에 쓰러뜨리기', r:450, test:() => G && G.bossFast },
-  { n:37, t:3, name:'무적의 10분',       desc:'한 판에서 처음 10분 동안 한 번도 안 맞기',           r:500, test:() => G && G.time >= 600 && !G.hitOnce },
-  { n:38, t:3, name:'팔방미인',          desc:'캐릭터 8명 모두로 일반 15단계 클리어',               r:500, test:() => meta.stats.clr8.length >= CHARS.length, prog:() => [meta.stats.clr8.length, CHARS.length] },
-  { n:39, t:3, name:'그랜드 슬램',       desc:'일반 15 + 하드 15 + 챌린지 2, 32개 스테이지 모두 클리어', r:750, test:() => allNormalCleared() && meta.hardCleared.every(Boolean) && CHALS.every(i => meta.cleared[i]), prog:() => [NORMAL.filter(i => meta.cleared[i]).length + meta.hardCleared.filter(Boolean).length + CHALS.filter(i => meta.cleared[i]).length, NORMAL.length + HARD_COUNT + CHALS.length] },
-  { n:40, t:3, name:'방울섬의 전설',     desc:'업적 39개 모두 달성',                                r:1000, test:() => ACH.every(a => a.n === 40 || meta.ach[a.n]), prog:() => [ACH.filter(a => a.n !== 40 && meta.ach[a.n]).length, 39] },
+  { n:1,  t:0, name:'첫 모험',           desc:'아무 스테이지에서 1분 버티기',                       r:8,  test:() => G && G.time >= 60 },
+  { n:2,  t:0, name:'꼬마 사냥꾼',       desc:'한 판에 몬스터 100마리 처치',                       r:13,  test:() => G && G.kills >= 100 },
+  { n:3,  t:0, name:'쑥쑥 자라요',       desc:'한 판에서 레벨 10 달성',                             r:13,  test:() => G && G.level >= 10 },
+  { n:4,  t:0, name:'첫 쇼핑',           desc:'별사탕 상점에서 강화 1번 구매',                      r:13,  test:() => META_DEF.some(m => (meta.up[m.id] || 0) > 0) },
+  { n:5,  t:0, name:'꾸미기 시작',       desc:'치장템 1개 구매',                                    r:13,  test:() => meta.ownedCos.length >= 1 },
+  { n:6,  t:0, name:'첫 클리어',         desc:'일반 1단계 클리어',                                  r:25,  test:() => meta.cleared[NORMAL[0]] },
+  { n:7,  t:1, name:'첫 진화',           desc:'무기 1개 진화',                                      r:25,  test:() => meta.stats.evo.length >= 1 },
+  { n:8,  t:1, name:'보스 사냥꾼',       desc:'중간 보스 누적 10마리 처치',                         r:38,  test:() => meta.stats.mid >= 10, prog:() => [meta.stats.mid, 10] },
+  { n:9,  t:1, name:'반환점',            desc:'일반 8단계 클리어',                                  r:50, test:() => meta.cleared[NORMAL[7]] },
+  { n:10, t:1, name:'새 친구',           desc:'해금 캐릭터 1명 해금',                               r:50, test:() => meta.unlockedChars.length >= 1 },
+  { n:11, t:1, name:'쌍둥이 진화',       desc:'한 판에서 진화 무기 2개 만들기',                     r:50, test:() => G && G.weapons.filter(w => w.evo).length >= 2 },
+  { n:12, t:1, name:'천 마리의 전설',    desc:'한 판에 몬스터 1,000마리 처치',                      r:50, test:() => G && G.kills >= 1000 },
+  { n:13, t:1, name:'별사탕 부자',       desc:'별사탕 누적 5,000개 모으기',                         r:75, test:() => meta.stats.candy >= 5000, prog:() => [meta.stats.candy, 5000] },
+  { n:14, t:2, name:'하드 입문',         desc:'하드 1단계 클리어',                                  r:75, test:() => meta.hardCleared[0] },
+  { n:15, t:2, name:'털끝 하나 안 다쳐', desc:'한 판에서 처음 5분 동안 한 번도 안 맞기',            r:100, test:() => G && G.time >= 300 && !G.hitOnce },
+  { n:16, t:2, name:'가시밭길',          desc:'챌린지 1 가시 정원 클리어',                          r:100, test:() => meta.cleared[CHALS[0]] },
+  { n:17, t:2, name:'일반 정복',         desc:'일반 15단계 모두 클리어',                            r:125, test:allNormalCleared, prog:() => [NORMAL.filter(i => meta.cleared[i]).length, NORMAL.length] },
+  { n:18, t:2, name:'외길 결투',         desc:'챌린지 2 외길 결투장 클리어',                        r:125, test:() => meta.cleared[CHALS[1]] },
+  { n:19, t:3, name:'진화 박사',         desc:'진화 무기 10종 모두 만들어 보기 (여러 판 합산)',     r:150, test:() => meta.stats.evo.length >= Object.keys(EVO).length, prog:() => [meta.stats.evo.length, Object.keys(EVO).length] },
+  { n:20, t:3, name:'하드 정복',         desc:'하드 15단계 클리어',                                 r:250, test:() => meta.hardCleared[HARD_COUNT - 1] },
+  { n:21, t:2, name:'만 마리의 전설',    desc:'몬스터 누적 10,000마리 처치',                        r:100, test:() => meta.stats.kills >= 10000, prog:() => [meta.stats.kills, 10000] },
+  { n:22, t:2, name:'강화 장인',         desc:'상점 강화 하나를 Lv.7까지 올리기',                   r:100, test:() => META_DEF.some(m => !m.max && (meta.up[m.id] || 0) >= META_MAX), prog:() => [Math.max(...META_DEF.filter(m => !m.max).map(m => meta.up[m.id] || 0)), META_MAX] },
+  { n:23, t:2, name:'최강 진화',         desc:'진화 무기를 +2까지 강화',                            r:100, test:() => G && G.weapons.some(w => w.evo && (w.evoLv || 0) >= EVO_PLUS_MAX) },
+  { n:24, t:2, name:'쑥쑥 무럭무럭',     desc:'한 판에서 레벨 50 달성',                             r:125, test:() => G && G.level >= 50 },
+  { n:25, t:2, name:'큰 바위 앞에서',    desc:'하드 6단계 클리어',                                  r:125, test:() => meta.hardCleared[5] },
+  { n:26, t:2, name:'3배속 질주',        desc:'처음부터 끝까지 3배속으로 일반 15단계 클리어',        r:125, test:() => G && G.achWin && !G.st.hard && G.stage === LAST_NORMAL && !G.slowSpd },
+  { n:27, t:2, name:'모두 모여라',       desc:'해금 캐릭터 모두 해금',                              r:150, test:() => CHARS.filter(c => c.cost).every(c => meta.unlockedChars.includes(c.id)), prog:() => [CHARS.filter(c => c.cost && meta.unlockedChars.includes(c.id)).length, CHARS.filter(c => c.cost).length] },
+  { n:28, t:2, name:'삼천 마리의 함성',  desc:'한 판에 몬스터 3,000마리 처치',                      r:150, test:() => G && G.kills >= 3000 },
+  { n:29, t:2, name:'다시 뽑기는 사치',  desc:'다시 뽑기 한 번도 안 쓰고 하드 단계 클리어',         r:150, test:() => G && G.achWin && G.st.hard && !G.rerollUsed },
+  { n:30, t:2, name:'진화 4총사',        desc:'한 판에서 무기 4개 모두 진화',                       r:175, test:() => G && G.weapons.length >= 4 && G.weapons.every(w => w.evo) },
+  { n:31, t:3, name:'벽 너머로',         desc:'하드 11단계 클리어',                                 r:175, test:() => meta.hardCleared[10] },
+  { n:32, t:3, name:'날개 없이',         desc:'부활(날개 하트) 안 쓰고 하드 10단계 이상 클리어',    r:200, test:() => G && G.achWin && G.st.hard && G.stage >= 9 && !G.reviveUsed },
+  { n:33, t:3, name:'맨몸 승부',         desc:'물약·회복 사탕을 하나도 안 먹고 하드 단계 클리어',   r:200, test:() => G && G.achWin && G.st.hard && !G.healUsed },
+  { n:34, t:3, name:'아슬아슬',          desc:'체력 10% 이하인 상태로 마지막 왕 쓰러뜨리기',        r:200, test:() => G && G.bossLowHp },
+  { n:35, t:3, name:'꾸미기 장인',       desc:'치장템 14종 모두 모으기',                            r:200, test:() => meta.ownedCos.length >= COS_LIST.length, prog:() => [meta.ownedCos.length, COS_LIST.length] },
+  { n:36, t:3, name:'번개 처치',         desc:'하드에서 마지막 왕이 나타나고 60초 안에 쓰러뜨리기', r:225, test:() => G && G.bossFast },
+  { n:37, t:3, name:'무적의 10분',       desc:'한 판에서 처음 10분 동안 한 번도 안 맞기',           r:250, test:() => G && G.time >= 600 && !G.hitOnce },
+  { n:38, t:3, name:'팔방미인',          desc:'캐릭터 8명 모두로 일반 15단계 클리어',               r:250, test:() => meta.stats.clr8.length >= CHARS.length, prog:() => [meta.stats.clr8.length, CHARS.length] },
+  { n:39, t:3, name:'그랜드 슬램',       desc:'일반 15 + 하드 15 + 챌린지 2, 32개 스테이지 모두 클리어', r:375, test:() => allNormalCleared() && meta.hardCleared.every(Boolean) && CHALS.every(i => meta.cleared[i]), prog:() => [NORMAL.filter(i => meta.cleared[i]).length + meta.hardCleared.filter(Boolean).length + CHALS.filter(i => meta.cleared[i]).length, NORMAL.length + HARD_COUNT + CHALS.length] },
+  { n:40, t:3, name:'방울섬의 전설',     desc:'업적 39개 모두 달성',                                r:500, test:() => ACH.every(a => a.n === 40 || meta.ach[a.n]), prog:() => [ACH.filter(a => a.n !== 40 && meta.ach[a.n]).length, 39] },
 ];
 const achClaimable = () => ACH.filter(a => meta.ach[a.n] === 1).length;
 // 조건을 확인해서 새로 달성한 업적을 기록해요 (보상은 업적 화면에서 직접 받아요)
@@ -2853,7 +2852,7 @@ function renderAch(keepScroll){
   const total = ACH.filter(a => meta.ach[a.n] === 2).reduce((x, a) => x + a.r, 0);
   const fmtN = v => Number(v).toLocaleString('ko-KR');
   screenEl.innerHTML = `<div class="panel" style="max-width:900px"><div class="txt">
-    <div class="row" style="justify-content:space-between"><h2>업적</h2>${candyHtml(meta.coins)}</div>
+    <div class="row" style="justify-content:space-between"><h2>업적</h2><div class="row" style="gap:12px">${candyHtml(meta.coins)}<button class="big alt" id="bBack">돌아가기</button></div></div>
     <div class="achsum"><div class="achbar"><span style="width:${done / ACH.length * 100}%"></span></div><span><b>${done}</b> / ${ACH.length} 달성 · 받은 별사탕 ${fmtN(total)}</span>
       ${claim ? `<button class="big achall" id="bAchAll">보상 모두 받기 (${claim})</button>` : ''}</div>
     ${ACH_TIERS.map(([cls, label], ti) => `<p class="sethead achtier ${cls}">${label}</p><div class="achlist">${ACH.filter(a => a.t === ti).map(a => {
@@ -2861,7 +2860,6 @@ function renderAch(keepScroll){
       return `<div class="ach t${ti}${st ? ' done' : ''}${st === 2 ? ' claimed' : ''}"><span class="achno">${st ? '✓' : a.n}</span>
         <div class="achbody"><b>${a.name}</b><small>${a.desc}</small>${pg ? `<span class="achpg"><span style="width:${Math.min(100, pg[0] / pg[1] * 100)}%"></span></span><small class="achpgt">${fmtN(Math.min(pg[0], pg[1]))} / ${fmtN(pg[1])}</small>` : ''}</div>
         ${st === 1 ? `<button class="achget" data-n="${a.n}">받기<br>+${a.r}</button>` : `<span class="achrw">${st === 2 ? '받음' : candyHtml(a.r)}</span>`}</div>`; }).join('')}</div>`).join('')}
-    <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
   </div></div>`;
   paintIcons(screenEl);
   const claimOne = a => { if (meta.ach[a.n] !== 1) return 0; meta.ach[a.n] = 2; meta.coins += a.r; return a.r; };
@@ -2911,7 +2909,7 @@ function setScreen(kind){
   } else if (kind === 'shop'){
     if (shopTab === 'cos'){ renderCosShop(); return; }
     screenEl.innerHTML = `<div class="panel" style="max-width:860px"><div class="txt">
-      <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2>${candyHtml(meta.coins)}</div>
+      <div class="row" style="justify-content:space-between"><h2>별사탕 상점</h2><div class="row" style="gap:12px">${candyHtml(meta.coins)}<button class="big alt" id="bBack">돌아가기</button></div></div>
       ${shopTabsHtml()}
       <p class="lead">한 번 산 강화는 모든 판에 계속 적용돼요.</p>
       ${(() => { const on = META_DEF.filter(m => (meta.up[m.id] || 0) > 0); return `<div class="sumbox"><span class="sumlab">지금 적용 중</span>${on.length ? on.map(m => `<span class="sumchip">${m.tot(Math.min(meta.up[m.id], m.max || META_MAX))}</span>`).join('') : '<span class="none">아직 산 강화가 없어요</span>'}</div>`; })()}
@@ -2920,7 +2918,6 @@ function setScreen(kind){
         return `<div class="srow${max ? ' maxed' : ''}"><canvas width="80" height="80" data-icon="${m.icon}" aria-hidden="true"></canvas>
           <div class="sinfo"><div class="sn">${m.name}</div><div class="sd">${m.per}</div><div class="stot">${lv ? `지금 <b>${m.tot(lv)}</b>` : '<span class="none">아직 없음</span>'}${max ? '' : `<span class="nx">다음 ${m.tot(lv + 1)}</span>`}</div><div class="pips" aria-label="${lv}단계 / ${mx}단계">${pips(lv, mx)} <span class="lvn">${lv}/${mx}</span></div></div>
           <button class="buy" data-id="${m.id}" ${max || meta.coins < cost ? 'disabled' : ''}>${max ? '최고 단계' : `별사탕 ${cost}`}</button></div>`; }).join('')}</div>
-      <div class="row"><button class="big alt" id="bBack">돌아가기</button></div>
     </div></div>`;
     paintIcons(screenEl);
     wireShopTabs();
