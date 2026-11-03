@@ -373,7 +373,7 @@ const HARD_COUNT = 15;
 function hardStage(i){
   const b = STAGES[NORMAL[i]];
   return Object.assign({}, b, { hard:true, hpMul:+(7.8 + .45 * i).toFixed(2), grow:+(.64 + .015 * i).toFixed(3), dmgMul:+(1.95 + .06 * i).toFixed(2), rateMul:+(1.55 + .04 * i).toFixed(2), bonus:450 + 30 * i,
-    desc:'몬스터가 훨씬 많고 튼튼한 하드 모드예요.' });
+    desc:'몬스터가 훨씬 많고 튼튼한 하드 모드예요. ' + OBS_TEXT[obsTierOf(i)] });
 }
 const hardOpenNow = () => !!meta.cleared[LAST_NORMAL] || meta.hardCleared.some(Boolean);
 const hardUnlocked = i => hardOpenNow() && (i === 0 || !!meta.hardCleared[i - 1]);
@@ -566,12 +566,14 @@ function recalc(){
 }
 const newWeapon = id => ({ id, lvl:1, t:.4, a:0 });
 function newRun(stage){
+  OB = { tier:0, seed:0, map:new Map() };
   const ch = CHARS[selChar];
   const stDef = hardMode ? hardStage(stage) : STAGES[stage], rl = stDef.rules || {};
   G = { stage, st:stDef, ch, time:0, kills:0, coins:0, level:1, xp:0, need:needFor(1), pending:0,
     p:{ x:0, y:0, fx:1, fy:0, hp:0, maxHp:0, inv:0, dashT:0, dashCd:0, walk:0, moving:false },
     enemies:[], proj:[], fx:[], gems:[], items:[], parts:[], texts:[], weapons:[newWeapon(ch.start), ...(ch.start2 ? [newWeapon(ch.start2)] : [])].slice(0, rl.maxWeapons || 4), passives:{},
     rerolls: rl.noReroll ? 0 : 1 + (meta.up.mreroll || 0), revives: meta.up.mrevive && !rl.noRevive ? 1 : 0, healTick:0, spawnAcc:6, events:{}, boss:null, cam:{ x:0, y:0 }, shake:0, giftT:18, clearT:0, dieT:0, combo:0, comboT:0 };
+  obsReset();
   recalc(); G.p.hp = G.p.maxHp;
   snapCam();
 }
@@ -853,6 +855,68 @@ function dropGem(x, y, v){
   G.gems.push({ x, y, v, m:false, sp:0 });
 }
 
+
+/* ---------- 하드 모드 장애물 (바위 · 큰 바위 · 벽) ---------- */
+// 하드 1~5단계: 작은 바위 / 6~10단계: 돌아가야 하는 큰 바위 / 11~15단계: 길을 막는 벽
+const OCH = 400;
+let OB = { tier:0, seed:0, map:new Map() };
+const OBS_TEXT = ['', '군데군데 바위가 놓여 있어요.', '돌아서 가야 하는 큰 바위가 있어요.', '길을 막는 벽이 곳곳에 있어요.'];
+const obsTierOf = i => i < 5 ? 1 : i < 10 ? 2 : 3;
+function mkRng(a){ return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function obsReset(){ OB = { tier: G.st.hard ? obsTierOf(G.stage) : 0, seed: G.stage * 31 + 7, map: new Map() }; }
+const obsExt = b => b.t === 'wall' ? [b.hw, b.hh] : [b.r, b.r * b.k];
+function obsChunk(cx, cy){
+  const key = gkey(cx, cy); let a = OB.map.get(key); if (a) return a;
+  a = []; OB.map.set(key, a);
+  const R = mkRng((cx * 73856093) ^ (cy * 19349663) ^ (OB.seed * 83492791)), x0 = cx * OCH, y0 = cy * OCH, M = 30, GAP = 58;
+  const place = o => {
+    const [hw, hh] = obsExt(o);
+    for (let n = 0; n < 10; n++){
+      o.x = x0 + M + hw + R() * (OCH - 2 * M - 2 * hw); o.y = y0 + M + hh + R() * (OCH - 2 * M - 2 * hh);
+      if (Math.abs(o.x) < 190 + hw && Math.abs(o.y) < 170 + hh) continue; // 시작 자리는 비워 둬요
+      if (a.some(b => { const [bw, bh] = obsExt(b); return Math.abs(o.x - b.x) < hw + bw + GAP && Math.abs(o.y - b.y) < hh + bh + GAP; })) continue;
+      o.v = R(); a.push(o); return;
+    }
+  };
+  const rock = () => place({ t:'rock', r:13 + R() * 8, k:.72 });
+  const boulder = () => place({ t:'boulder', r:46 + R() * 22, k:.66 });
+  if (OB.tier === 1){ const n = 3 + (R() < .5 ? 1 : 0); for (let i = 0; i < n; i++) rock(); }
+  else if (OB.tier === 2){ boulder(); if (R() < .55) boulder(); rock(); rock(); }
+  else if (OB.tier === 3){
+    const n = 1 + (R() < .55 ? 1 : 0);
+    for (let i = 0; i < n; i++){ const L = 80 + R() * 62; place(R() < .5 ? { t:'wall', hw:L, hh:14 } : { t:'wall', hw:14, hh:L }); }
+    if (R() < .6) boulder(); rock(); if (R() < .5) rock();
+  }
+  return a;
+}
+// 원(반지름 r)이 장애물과 겹치면 밖으로 밀어내요. 부딪힌 면의 방향을 돌려줘요.
+function obsResolve(o, r){
+  if (!OB.tier) return null;
+  let hit = null;
+  const cx0 = Math.floor((o.x - r) / OCH), cx1 = Math.floor((o.x + r) / OCH), cy0 = Math.floor((o.y - r) / OCH), cy1 = Math.floor((o.y + r) / OCH);
+  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) for (const b of obsChunk(cx, cy)){
+    if (b.t === 'wall'){
+      const qx = Math.max(b.x - b.hw, Math.min(b.x + b.hw, o.x)), qy = Math.max(b.y - b.hh, Math.min(b.y + b.hh, o.y));
+      const dx = o.x - qx, dy = o.y - qy, d = Math.hypot(dx, dy);
+      if (d >= r) continue;
+      if (d < .001){
+        const px = b.hw - Math.abs(o.x - b.x), py = b.hh - Math.abs(o.y - b.y);
+        if (px < py){ const sx = Math.sign(o.x - b.x) || 1; o.x = b.x + sx * (b.hw + r); hit = [sx, 0, b]; }
+        else { const sy = Math.sign(o.y - b.y) || 1; o.y = b.y + sy * (b.hh + r); hit = [0, sy, b]; }
+      } else { const nx = dx / d, ny = dy / d; o.x = qx + nx * r; o.y = qy + ny * r; hit = [nx, ny, b]; }
+    } else {
+      const dx = o.x - b.x, dy = (o.y - b.y) / b.k, d = Math.hypot(dx, dy), RR = b.r + r;
+      if (d >= RR) continue;
+      const nx = d > .001 ? dx / d : 0, ny = d > .001 ? dy / d : 1;
+      o.x = b.x + nx * RR; o.y = b.y + ny * RR * b.k; hit = [nx, ny, b];
+    }
+  }
+  return hit;
+}
+function obsInView(x0, y0, x1, y1, out){
+  for (let cy = Math.floor(y0 / OCH); cy <= Math.floor(y1 / OCH); cy++) for (let cx = Math.floor(x0 / OCH); cx <= Math.floor(x1 / OCH); cx++) for (const b of obsChunk(cx, cy)) out.push(b);
+  return out;
+}
 function updatePlayer(dt){
   const p = G.p, iv = inputVec();
   p.moving = iv.m > .12;
@@ -864,6 +928,7 @@ function updatePlayer(dt){
     G.parts.push({ x:p.x + (Math.random() - .5) * 8, y:p.y - 10, vx:0, vy:-10, life:.3, max:.3, col:'rgba(255,255,255,.9)', size:6, g:0, type:'dot' });
   }
   p.x += mx * dt; p.y += my * dt;
+  if (OB.tier){ obsResolve(p, 8); obsResolve(p, 8); }
   p.dashCd -= dt; p.inv -= dt;
   if (S.regen && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + S.regen * dt);
   G.healTick += dt;
@@ -885,7 +950,34 @@ function updateEnemies(dt){
     else if (e.kind === 'penguin'){ e.slide = (e.ph % 3.2) > 2.5; if (e.slide) sp *= 2.4; e.walk += dt * sp * .12; }
     else e.walk += dt * sp * .12;
     e.look = dx < 0 ? -1 : 1;
-    e.x += (dx / d * sp + e.kx) * dt; e.y += (dy / d * sp + e.ky) * dt;
+    let ux = dx / d, uy = dy / d;
+    if (e.wps){
+      // 벽을 돌아가는 길 (벽 끝 모서리 → 반대편 모서리)
+      const w0 = e.wps[0];
+      if (Math.hypot(w0.x - e.x, w0.y - e.y) < 12) e.wps.shift();
+      if ((e.wpT -= dt) <= 0 || !e.wps.length || e.wpSide !== Math.sign(e.wpH ? p.y - e.wpB.y : p.x - e.wpB.x)) e.wps = null;
+      else { const wx = e.wps[0].x - e.x, wy = e.wps[0].y - e.y, wl = Math.hypot(wx, wy) || 1; ux = wx / wl; uy = wy / wl; }
+    }
+    e.x += (ux * sp + e.kx) * dt; e.y += (uy * sp + e.ky) * dt;
+    if (OB.tier && !e.fly && !e.boss){
+      const n = obsResolve(e, e.r * .8);
+      if (n){
+        // 막히면 옆으로 미끄러지며 돌아서 와요 (한 번 고른 방향을 잠깐 유지)
+        e.slideT = .7; e.slideLong = (e.slideLong || 0) + dt;
+        const wb = n[2];
+        if (wb.t === 'wall' && !e.wps && (wb.hw > wb.hh ? Math.abs(n[1]) > .7 : Math.abs(n[0]) > .7)){
+          // 벽에 막히면 플레이어 쪽으로 더 가까운 벽 끝을 골라 모서리를 돌아서 와요
+          const H = wb.hw > wb.hh, a0 = H ? wb.x - wb.hw : wb.y - wb.hh, a1 = H ? wb.x + wb.hw : wb.y + wb.hh, ea = H ? e.x : e.y, pa = H ? p.x : p.y;
+          const lo = Math.abs(ea - a0) + Math.abs(pa - a0) < Math.abs(ea - a1) + Math.abs(pa - a1), m = e.r + 16;
+          const ex = lo ? a0 - m : a1 + m, sd = Math.sign(H ? e.y - wb.y : e.x - wb.x) || 1, half = (H ? wb.hh : wb.hw) + m, c = H ? wb.y : wb.x;
+          e.wps = H ? [{ x:ex, y:c + sd * half }, { x:ex, y:c - sd * half }] : [{ x:c + sd * half, y:ex }, { x:c - sd * half, y:ex }];
+          e.wpB = wb; e.wpH = H; e.wpSide = -sd; e.wpT = 6; e.slideS = 0;
+        } else if (e.slideLong > 2.4){ e.slideLong = 0; e.slideS = -(e.slideS || 1); } // 오래 막혀 있으면 반대쪽으로 돌아가요
+        if (!e.slideS){ const tdot = -n[1] * dx + n[0] * dy; e.slideS = Math.abs(tdot) > d * .2 ? Math.sign(tdot) : (Math.random() < .5 ? -1 : 1); }
+        e.x += -n[1] * e.slideS * sp * .95 * dt; e.y += n[0] * e.slideS * sp * .95 * dt;
+        obsResolve(e, e.r * .8);
+      } else if ((e.slideT = (e.slideT || 0) - dt) <= 0){ e.slideS = 0; e.slideLong = 0; }
+    }
     const kd = Math.max(0, 1 - dt * 10); e.kx *= kd; e.ky *= kd;
     if (d > farD && !e.boss && !e.elite){ const [x, y] = spawnPos(); e.x = x; e.y = y; continue; }
     if (p.inv <= 0 && d < e.r + 9 && state === 'play') hurtPlayer(e.dmg);
@@ -901,6 +993,7 @@ function updateEnemies(dt){
       if (++c > 8) break;
     }
   }
+  if (OB.tier) for (const e of G.enemies) if (!e.dead && !e.fly && !e.boss) obsResolve(e, e.r * .8);
 }
 function nearestEnemies(n, maxD){
   const p = G.p, arr = [];
@@ -1170,7 +1263,9 @@ function updateItems(dt){
   if (G.giftT <= 0){
     G.giftT = (28 + Math.random() * 10) / 1.2;
     const a = Math.random() * TAU, r = 220 + Math.random() * 120;
-    G.items.push({ k:'gift', x:p.x + Math.cos(a) * r, y:p.y + Math.sin(a) * r, z:0, vz:0, age:0 });
+    const gift = { k:'gift', x:p.x + Math.cos(a) * r, y:p.y + Math.sin(a) * r, z:0, vz:0, age:0 };
+    if (OB.tier){ obsResolve(gift, 18); obsResolve(gift, 18); }
+    G.items.push(gift);
   }
   for (const it of G.items){
     it.age += dt;
@@ -1882,6 +1977,73 @@ function drawEnemy(e, t){
   else if (e.elite) crown(top + 1, '#e6e2f5');
   X.restore();
 }
+
+// 장애물 그리기 (발밑 기준, 위로 솟아 보이게)
+const ROCK_PAL = [
+  { body:'#b5aed6', top:'#dcd7f2', dark:'#8f87bd' },
+  { body:'#c7b9a6', top:'#e8dccb', dark:'#9f8f7b' },
+];
+function drawObstacle(b){
+  if (b.t === 'wall'){
+    const H = 30, x0 = b.x - b.hw, y0 = b.y - b.hh, w = b.hw * 2, h = b.hh * 2;
+    // 앞면
+    X.fillStyle = '#ada3d3'; X.fillRect(x0, y0 + h - H, w, H);
+    X.save(); X.beginPath(); X.rect(x0, y0 + h - H, w, H); X.clip();
+    X.strokeStyle = 'rgba(58,46,95,.32)'; X.lineWidth = 1.6; X.beginPath();
+    X.moveTo(x0, y0 + h - H / 2); X.lineTo(x0 + w, y0 + h - H / 2);
+    for (let i = 0, bx = x0 + 6 + b.v * 14; bx < x0 + w; bx += 26, i++){ X.moveTo(bx, y0 + h - H); X.lineTo(bx, y0 + h - H / 2); X.moveTo(bx + 13, y0 + h - H / 2); X.lineTo(bx + 13, y0 + h); }
+    X.stroke(); X.restore();
+    // 윗면
+    rr(x0, y0 - H, w, h, 7); X.fillStyle = '#e4ddf5'; X.fill();
+    X.strokeStyle = 'rgba(58,46,95,.18)'; X.lineWidth = 1.4; X.beginPath();
+    if (w > h){ for (let bx = x0 + 30 + b.v * 10; bx < x0 + w - 10; bx += 34){ X.moveTo(bx, y0 - H + 4); X.lineTo(bx, y0 - H + h - 4); } }
+    else { for (let by = y0 - H + 30 + b.v * 10; by < y0 - H + h - 10; by += 34){ X.moveTo(x0 + 4, by); X.lineTo(x0 + w - 4, by); } }
+    X.stroke();
+    // 풀 장식
+    X.fillStyle = '#8fd27a';
+    const n = Math.max(1, Math.floor(Math.max(w, h) / 70));
+    for (let i = 0; i < n; i++){
+      const f = (i + .5 + (b.v - .5) * .4) / n, gx = w > h ? x0 + w * f : x0 + w / 2, gy = w > h ? y0 - H + h / 2 : y0 - H + h * f;
+      ell(gx - 3, gy, 4, 2.6); X.fill(); ell(gx + 3, gy - 1, 3.4, 2.4); X.fill();
+    }
+    // 테두리
+    X.beginPath(); X.moveTo(x0 + 7, y0 - H); X.arcTo(x0 + w, y0 - H, x0 + w, y0 + h, 7); X.lineTo(x0 + w, y0 + h); X.lineTo(x0, y0 + h); X.arcTo(x0, y0 - H, x0 + w, y0 - H, 7); X.closePath();
+    X.lineWidth = 2.6; X.strokeStyle = INK; X.lineJoin = 'round'; X.stroke();
+    X.beginPath(); X.moveTo(x0, y0 + h - H); X.lineTo(x0 + w, y0 + h - H); X.lineWidth = 2; X.stroke();
+    return;
+  }
+  const P = ROCK_PAL[b.v < .62 ? 0 : 1], big = b.t === 'boulder';
+  // 캐릭터가 바위 뒤에 가려지면 바위를 살짝 투명하게
+  const pp = G.p, top = b.y - b.r * b.k - b.r * (big ? .5 : .55) - 26;
+  const hide = pp.y < b.y && pp.y > top && Math.abs(pp.x - b.x) < b.r + 10;
+  if (hide) X.globalAlpha = .55;
+  if (big){ rockLump(b.x - b.r * .38, b.y - b.r * b.k * .55, b.r * .62, b.k, b.r * .5, b.v * 7 + 3, P); rockLump(b.x + b.r * .1, b.y, b.r, b.k, b.r * .42, b.v * 7, P, true); }
+  else rockLump(b.x, b.y, b.r, b.k, b.r * .55, b.v * 7, P);
+  X.globalAlpha = 1;
+}
+// 바닥은 납작하고 위는 울퉁불퉁한 바위 덩어리
+function rockLump(x, y, r, k, h, seed, P, moss){
+  const n = 7, pts = [];
+  for (let i = 0; i <= n; i++){
+    const a = i / n * Math.PI, j = i === 0 || i === n ? 1 : .86 + hash(seed, i) * .22;
+    pts.push([x + Math.cos(a) * r * (i === 0 || i === n ? 1 : j), y - Math.sin(a) * (r * k + h) * j - (i === 0 || i === n ? 0 : h * .15)]);
+  }
+  const path = () => {
+    X.beginPath(); X.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++){ const [px, py] = pts[i - 1], [qx, qy] = pts[i]; X.quadraticCurveTo(px + (qx - px) * .15, py + (qy - py) * .15 - 2, qx, qy); }
+    X.ellipse(x, y, r, r * k, 0, Math.PI, 0, true); X.closePath();
+  };
+  path(); X.fillStyle = P.body; X.fill();
+  X.save(); path(); X.clip();
+  ell(x + r * .1, y + r * k * .1, r * 1.1, r * k * 1.05); X.fillStyle = P.dark; X.fill();
+  X.beginPath(); X.moveTo(pts[3][0], pts[3][1] + 2); X.lineTo(pts[5][0], pts[5][1] + 2); X.lineTo(pts[6][0] + r * .1, pts[6][1] + h * .45); X.lineTo(x - r * .05, y - h * .55 - r * k * .2); X.closePath();
+  X.fillStyle = P.top; X.fill();
+  if (moss){ X.fillStyle = '#8fd27a'; ell(pts[4][0], pts[4][1] + 5, r * .2, r * k * .12); X.fill(); ell(pts[3][0], pts[3][1] + 5, r * .12, r * k * .09); X.fill(); }
+  X.restore();
+  path(); X.lineWidth = 2.6; X.strokeStyle = INK; X.lineJoin = 'round'; X.stroke();
+  X.beginPath(); X.moveTo(x + r * .32, y - h * .55); X.lineTo(x + r * .44, y - h * .3); X.lineTo(x + r * .36, y - h * .08);
+  X.lineWidth = 1.6; X.strokeStyle = 'rgba(58,46,95,.5)'; X.stroke();
+}
 function drawGround(st, cam, vwW, vhW){
   X.fillStyle = st.ground; X.fillRect(cam.x - 2, cam.y - 2, vwW + 4, vhW + 4);
   const tx0 = Math.floor(cam.x / T) - 1, tx1 = Math.ceil((cam.x + vwW) / T) + 1, ty0 = Math.floor(cam.y / T) - 1, ty1 = Math.ceil((cam.y + vhW) / T) + 1;
@@ -2108,15 +2270,22 @@ function render(rt){
   for (const e of G.enemies) if (inView(e.x, e.y)){ const s = e.fly ? .6 : 1 - Math.min(.4, e.z / (25 * e.s)); ell(e.x, e.y, 11 * e.s * s, 4 * e.s * s); X.fill(); }
   for (const it of G.items) if (inView(it.x, it.y)){ ell(it.x, it.y, it.k === 'chest' || it.k === 'gift' ? 14 : 7, 4); X.fill(); }
   ell(p.x, p.y, 10, 4); X.fill();
+  const obsVis = OB.tier ? obsInView(cam.x - 100, cam.y - 60, cam.x + vwW + 100, cam.y + vhW + 160, []) : [];
+  for (const b of obsVis){
+    if (b.t === 'wall'){ rr(b.x - b.hw + 4, b.y - b.hh + 2, b.hw * 2 + 4, b.hh * 2 + 6, 8); X.fill(); }
+    else { ell(b.x + 4, b.y + 2, b.r * 1.08, b.r * b.k * 1.1); X.fill(); }
+  }
 
   const list = [];
   for (const e of G.enemies) if (inView(e.x, e.y, 60 * e.s)) list.push([e.y, 0, e]);
   for (const it of G.items) if (inView(it.x, it.y)) list.push([it.y, 1, it]);
   if (state !== 'dying' && state !== 'result') list.push([p.y, 2, p]);
+  for (const b of obsVis) list.push([b.t === 'wall' ? b.y + b.hh : b.y, 3, b]);
   list.sort((a, b) => a[0] - b[0]);
   for (const [, type, o] of list){
     if (type === 0) drawEnemy(o, rt);
     else if (type === 1) drawItem(o, rt);
+    else if (type === 3) drawObstacle(o);
     else {
       if (p.inv > 0 && Math.floor(rt * 18) % 2) X.globalAlpha = .45;
       drawDressedChar(p.x, p.y, p.fx, p.fy, p.walk, p.moving, rt, G.ch);
