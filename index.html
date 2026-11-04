@@ -201,6 +201,11 @@ body.touch .card .key{display:none}
 .cbody{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 
 .chcard.rand .randw{font-family:var(--font-display);font-size:13px;color:var(--soft)}
+.helpov{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(58,46,95,.5);padding:16px;animation:helpfade .15s ease-out}
+.helpbox{width:min(100%,340px);background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:18px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.helpbox h3{margin:0;font-family:var(--font-display);font-weight:400;font-size:22px;color:var(--pink)}
+.helpmsg{margin:0;width:100%;box-sizing:border-box;padding:10px 14px;font-family:var(--font-display);font-size:20px;text-align:center}
+@keyframes helpfade{from{opacity:0}}
 .achbtn{position:relative;padding-left:9px!important;padding-right:9px!important}
 .achbtn svg{margin-right:0!important;width:22px;height:22px}
 .achbtn .badge{position:absolute;top:-9px;right:-10px;margin:0}
@@ -2962,6 +2967,7 @@ function setScreen(kind){
         ${couponFormHtml()}
       </div>
       </div>
+      <div class="setcol">
       <div class="setgrp">
         <p class="sethead">화면</p>
         <div class="setrow"><span class="lab">화면 비율</span><div class="seg" role="group" aria-label="화면 비율">${VIEWS.map((o, i) => `<button data-view="${o.v}" aria-pressed="${i === vIdx}">${o.label}</button>`).join('')}</div></div>
@@ -2970,6 +2976,11 @@ function setScreen(kind){
         <p class="hint">휴대폰의 '화면 방향 잠금'이 켜져 있으면 돌아가지 않아요. 제어 센터에서 꺼 주세요.</p>
         <div class="setrow"><span class="lab">게임 속도</span><div class="seg" role="group" aria-label="게임 속도">${SPEEDS.map(v => `<button data-spd="${v}" aria-pressed="${v === gameSpeed}">${spdLabel(v)}</button>`).join('')}</div></div>
       </div>
+      <div class="setgrp">
+        <p class="sethead">고객센터</p>
+        <div class="setrow"><span class="lab">문의하기</span><button class="toggle" id="bHelp" aria-haspopup="dialog">고객센터</button></div>
+      </div>
+      </div>
       </div>
     </div></div>`;
     const bind = (id, out, key, test) => {
@@ -2977,6 +2988,18 @@ function setScreen(kind){
       el.addEventListener('input', () => { settings[key] = +el.value; $(out).textContent = el.value; ensureAudio(); applyAudio(); saveSettings(); });
       el.addEventListener('change', test);
     };
+    // 고객센터: 새 창(팝업)으로 안내 문구를 보여줘요
+    $('bHelp').addEventListener('click', () => {
+      ensureAudio(); sfx('buy');
+      const ov = document.createElement('div');
+      ov.className = 'helpov';
+      ov.innerHTML = `<div class="helpbox" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><h3 id="helpTitle">고객센터</h3><p class="helpmsg">없음.</p><button class="big" id="bHelpClose">닫기</button></div>`;
+      screenEl.appendChild(ov);
+      const close = () => { ov.remove(); $('bHelp') && $('bHelp').focus({ preventScroll:true }); };
+      ov.addEventListener('click', e => { if (e.target === ov) close(); });
+      $('bHelpClose').addEventListener('click', close);
+      $('bHelpClose').focus({ preventScroll:true });
+    });
     bind('sBgm', 'oBgm', 'bgm', () => { tone(midi(72), 0, .3, 'triangle', .05, 0, 'music'); tone(midi(76), 0, .3, 'triangle', .05, .15, 'music'); });
     bind('sSfx', 'oSfx', 'sfx', () => sfx('gem'));
     $('sMute').addEventListener('click', () => {
