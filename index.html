@@ -220,18 +220,18 @@ body.touch .card .key{display:none}
 .vtabs button{font-size:15px;padding:4px 14px}
 .vmsg{position:absolute;left:50%;top:70px;transform:translateX(-50%);margin:0;z-index:4;background:var(--ink);color:#fff;font-family:var(--font-display);font-size:15px;padding:6px 14px;border-radius:999px;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .vzoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:76px;display:flex;flex-direction:column;gap:6px;z-index:2}
-.vzoom button{width:40px;height:40px;border-radius:12px;border:2.5px solid var(--ink);background:#fff;box-shadow:0 3px 0 var(--ink);font-size:20px;font-weight:700;color:var(--ink);cursor:pointer}
+.vzoom button{width:34px;height:34px;border-radius:12px;border:2.5px solid var(--ink);background:#fff;box-shadow:0 3px 0 var(--ink);font-size:20px;font-weight:700;color:var(--ink);cursor:pointer}
 .vact{flex:1 0 100%;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;background:#fff3f8;border:2px solid var(--ink);border-radius:14px;padding:4px 10px;font-family:var(--font-display);font-size:14px;box-sizing:border-box}
 .vact b{font-weight:400;color:#c2416f}
 .vact button{font-family:var(--font-display);font-size:14px;border:2px solid var(--ink);border-radius:999px;background:var(--sun);padding:3px 10px;cursor:pointer;color:var(--ink)}
 .vact .vleft{color:var(--soft);font-size:13px}
-.vtray{position:absolute;left:0;right:0;bottom:0;display:flex;gap:10px;align-items:center;overflow-x:auto;padding:10px max(12px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(255,253,248,.94);border-top:3px solid var(--ink);z-index:2;touch-action:pan-x}
-.vtl{font-family:var(--font-display);font-size:14px;color:#c2416f;writing-mode:vertical-rl;flex:0 0 auto}
-.vempty{font-family:var(--font-display);font-size:15px;color:var(--soft);padding:24px 6px}
-.vinv{position:relative;flex:0 0 auto;width:74px;display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink);padding:4px 4px 6px;cursor:pointer;color:var(--ink)}
-.vinv canvas{width:48px;height:48px}
-.vinv span{font-family:var(--font-display);font-size:12px;white-space:nowrap}
-.vinv i{position:absolute;top:-8px;right:-8px;font-style:normal;min-width:22px;height:22px;display:grid;place-items:center;background:var(--pink);color:#fff;border:2px solid var(--ink);border-radius:999px;font-family:var(--font-display);font-size:12px;padding:0 4px;box-sizing:border-box}
+.vtray{position:absolute;left:0;right:0;bottom:0;display:flex;gap:9px;align-items:center;overflow-x:auto;padding:7px max(12px,env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 4px);background:rgba(255,253,248,.94);border-top:2.5px solid var(--ink);z-index:2;touch-action:pan-x}
+.vtl{font-family:var(--font-display);font-size:11px;color:#c2416f;writing-mode:vertical-rl;flex:0 0 auto}
+.vempty{font-family:var(--font-display);font-size:13px;color:var(--soft);padding:10px 6px}
+.vinv{position:relative;flex:0 0 auto;width:42px;display:flex;flex-direction:column;align-items:center;gap:0;background:#fff;border:2px solid var(--ink);border-radius:10px;box-shadow:0 2px 0 var(--ink);padding:2px 2px 3px;cursor:pointer;color:var(--ink)}
+.vinv canvas{width:34px;height:34px}
+.vinv span{font-family:var(--font-display);font-size:9.5px;white-space:nowrap;max-width:46px;overflow:hidden;text-overflow:ellipsis}
+.vinv i{position:absolute;top:-6px;right:-6px;font-style:normal;min-width:17px;height:17px;font-size:10px!important;display:grid;place-items:center;background:var(--pink);color:#fff;border:2px solid var(--ink);border-radius:999px;font-family:var(--font-display);font-size:12px;padding:0 4px;box-sizing:border-box}
 .vinv.on{background:#fff3c4;outline:3px solid var(--pink);outline-offset:1px}
 .vshop{position:absolute;left:0;right:0;top:64px;bottom:0;overflow:auto;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(12px,env(safe-area-inset-left,0px));background:rgba(255,253,248,.97);z-index:1;display:flex;flex-direction:column;gap:10px;touch-action:pan-y}
 .vcats{display:flex;flex-wrap:wrap;gap:6px}
@@ -3578,7 +3578,7 @@ function renderVillage(){
     ${V.tab === 'deco' ? `<span class="vsize">${(() => { const lv = vGrowLv(), nx = VGROW[lv + 1]; return `섬 ${VW}×${VH}칸${nx ? ` · 다음 ×${nx.k}: ${nx.need}` : ' · 최대 크기!'}`; })()}</span>` : ''}
     ${V.tab === 'deco' ? `
     <div class="vzoom"><button id="vZin" aria-label="크게 보기">＋</button><button id="vZout" aria-label="작게 보기">－</button></div>
-<div class="vtray"><span class="vtl">창고</span>${owned.length ? owned.map(id => `<button class="vinv${V.pick === id ? ' on' : ''}" data-id="${id}" aria-label="${VITEMS[id].name} ${H.inv[id]}개"><canvas width="96" height="96" data-vp="${id}" aria-hidden="true"></canvas><span>${VITEMS[id].name}</span><i>${H.inv[id]}</i></button>`).join('') : '<span class="vempty">창고가 비었어요. [상점]에서 가구를 사 보세요!</span>'}</div>` : `
+<div class="vtray"><span class="vtl">창고</span>${owned.length ? owned.map(id => `<button class="vinv${V.pick === id ? ' on' : ''}" data-id="${id}" aria-label="${VITEMS[id].name} ${H.inv[id]}개"><canvas width="96" height="96" data-vp="${id}" aria-hidden="true"></canvas><i>${H.inv[id]}</i></button>`).join('') : '<span class="vempty">창고가 비었어요. [상점]에서 가구를 사 보세요!</span>'}</div>` : `
     <div class="vshop">
       <div class="vcats" role="group" aria-label="종류">${cats}</div>
       <div class="vgrid">${shopItems.map(id => { const it = VITEMS[id], have = (H.inv[id] || 0) + placedN(id); return `<div class="vcard"><canvas width="140" height="120" data-vp="${id}" aria-hidden="true"></canvas><b>${it.name}</b><small>${it.w}×${it.h}칸${have ? ` · 가진 것 ${have}` : ''}</small><button class="vbuy" data-id="${id}">별사탕 ${it.price}</button></div>`; }).join('')}</div>
@@ -3630,7 +3630,7 @@ function renderVillage(){
       });
     });
   } else if (V.tab === 'deco'){
-    $('vZin').addEventListener('click', () => { V.z = Math.min(2.4, V.z * 1.25); });
+    $('vZin').addEventListener('click', () => { V.z = Math.min(3, V.z * 1.25); });
     $('vZout').addEventListener('click', () => { V.z = Math.max(.8, V.z / 1.25); if (V.z <= .81){ V.camX = V.camY = 0; } });
     screenEl.querySelectorAll('.vinv').forEach(b => b.addEventListener('click', () => { const id = b.dataset.id; V.sel = null; V.pick = V.pick === id ? null : id; V.flip = 0; V.moveFrom = null; V.ghost = null; sfx('buy'); renderVillage(); }));
     if (V.sel){
@@ -3647,7 +3647,37 @@ function renderVillage(){
       });
     }
     const c = V.cv;
-    c.addEventListener('pointerdown', e => { ensureAudio(); V.drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:V.camX, cy:V.camY, moved:false }; try { c.setPointerCapture(e.pointerId); } catch(err){} if (V.pick){ const r = c.getBoundingClientRect(), [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } } });
+    // 두 손가락으로 벌리고 오므리면 확대·축소 (손가락 사이를 기준으로)
+    V.ptrs = new Map();
+    const zoomAt = (mx, my, nz, base) => {
+      nz = Math.max(.8, Math.min(3, nz));
+      const k = nz / base.z, sc1 = base.sc * k;
+      const ox1 = mx - (base.mx - base.ox) * k, oy1 = my - (base.my - base.oy) * k;
+      V.z = nz;
+      V.camX = base.camX + (ox1 - base.ox) + (VW - VH) * HW / 2 * (sc1 - base.sc);
+      V.camY = base.camY + (oy1 - base.oy) + (VW + VH) * HH / 2 * (sc1 - base.sc);
+    };
+    const pinchInfo = () => { const [a, b] = [...V.ptrs.values()], r = c.getBoundingClientRect(); return { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, mx:(a.x + b.x) / 2 - r.left, my:(a.y + b.y) / 2 - r.top }; };
+    c.addEventListener('wheel', e => {
+      e.preventDefault(); const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      zoomAt(mx, my, V.z * Math.exp(-e.deltaY * .0015), { z:V.z, sc:V.sc, ox:V.ox, oy:V.oy, camX:V.camX, camY:V.camY, mx, my });
+    }, { passive:false });
+    c.addEventListener('pointerdown', e => {
+      V.ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      if (V.ptrs.size === 2){ const q = pinchInfo(); V.pinch = { d0:q.d, z:V.z, sc:V.sc, ox:V.ox, oy:V.oy, camX:V.camX, camY:V.camY, mx:q.mx, my:q.my }; V.drag = null; try { c.setPointerCapture(e.pointerId); } catch(err){} return; }
+      if (V.ptrs.size > 2) return;
+    }, true);
+    c.addEventListener('pointermove', e => {
+      if (V.ptrs.has(e.pointerId)) V.ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      if (V.pinch && V.ptrs.size >= 2){ e.stopImmediatePropagation(); const q = pinchInfo(); zoomAt(q.mx, q.my, V.pinch.z * q.d / V.pinch.d0, V.pinch); }
+    }, true);
+    const ptrUp = e => {
+      V.ptrs.delete(e.pointerId);
+      if (V.pinch){ if (V.ptrs.size < 2){ V.pinch = null; V.afterPinch = true; V.drag = null; } e.stopImmediatePropagation(); return; }
+      if (V.afterPinch){ if (!V.ptrs.size) V.afterPinch = false; V.drag = null; e.stopImmediatePropagation(); }
+    };
+    c.addEventListener('pointerup', ptrUp, true); c.addEventListener('pointercancel', ptrUp, true);
+    c.addEventListener('pointerdown', e => { if (V.pinch || V.afterPinch || V.ptrs.size > 1) return; ensureAudio(); V.drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:V.camX, cy:V.camY, moved:false }; try { c.setPointerCapture(e.pointerId); } catch(err){} if (V.pick){ const r = c.getBoundingClientRect(), [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } } });
     c.addEventListener('pointermove', e => {
       const r = c.getBoundingClientRect();
       if (V.pick && (!V.drag || e.pointerType === 'mouse')){ const [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } }
