@@ -3397,14 +3397,20 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       break;
     }
     case 'fence': {
-      const yy = y + .5, px = x + .5;
-      const rail = (x0, x1) => { for (const z of [8, 16]) fBox(x0, yy - .03, x1 - x0, .06, 3.6, z, '#fcebd5', '#f2d6b5', '#e2bf9b', 1.1); };
+      // 옆·앞뒤 칸에 울타리가 있으면 그쪽으로 가로대를 이어요 (모서리도 자연스럽게)
+      const yy = y + .5, px = x + .5, has = (a2, b2) => { const st = V.fenceSet; return !!st && st.has(mir ? b2 + ',' + a2 : a2 + ',' + b2); };
+      let nW = has(x - 1, y), nE = has(x + 1, y), nN = has(x, y - 1), nS = has(x, y + 1);
+      if (!nW && !nE && !nN && !nS) nW = nE = true; // 혼자 있을 땐 가로로 한 칸
+      const railX = (x0, x1) => { for (const z of [8, 16]) fBox(x0, yy - .03, x1 - x0, .06, 3.6, z, '#fcebd5', '#f2d6b5', '#e2bf9b', 1.1); };
+      const railY = (y0, y1) => { for (const z of [8, 16]) fBox(px - .03, y0, .06, y1 - y0, 3.6, z, '#fcebd5', '#f2d6b5', '#e2bf9b', 1.1); };
       X.beginPath(); X.ellipse(...P(px + .05, yy + .05), 6, 3, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
-      rail(x, px - .07);
+      if (nN) railY(y, yy - .07);
+      if (nW) railX(x, px - .07);
       fBox(px - .07, yy - .07, .14, .14, 22, 0, null, '#f7dcbd', '#e8c6a2', 1.3);
       { const a = P(px - .07, yy + .07, 22), b = P(px + .07, yy + .07, 22), c = P(px + .07, yy - .07, 22), tp = P(px, yy, 29);
         poly([a, b, tp]); X.fillStyle = '#fbe6cd'; X.fill(); ink(1.3); poly([b, c, tp]); X.fillStyle = '#ebcaa8'; X.fill(); ink(1.3); }
-      rail(px + .07, x + 1);
+      if (nE) railX(px + .07, x + 1);
+      if (nS) railY(yy + .07, y + 1);
       break;
     }
     case 'bench': {
@@ -3602,6 +3608,8 @@ function drawVillage(rt){
   vNpcUpdate(vdt);
   const draw = o => o.ch ? vDrawNpc(o, rt) : vDrawItem(o.id, o.x, o.y, rt, o.f);
   V.pathSet = new Set(H.placed.filter(o => o.id === 'path').map(o => o.x + ',' + o.y));
+  V.fenceSet = new Set(H.placed.filter(o => o.id === 'fence').map(o => o.x + ',' + o.y));
+  if (V.pick === 'fence' && V.ghost) V.fenceSet.add(V.ghost.x + ',' + V.ghost.y);
   for (const o of H.placed) if (VITEMS[o.id].cat === 'floor') draw(o);
   if (V.sel && !placing){
     const q = vFoot(V.sel), pul = .5 + Math.sin(rt * 5) * .25;
@@ -3642,7 +3650,7 @@ function vPreview(cv2, id){
   X.setTransform(sc, 0, 0, sc, cv2.width / 2 - cx * sc, cv2.height / 2 + (vHeight(id) / 2 - cy) * sc);
   const tile = poly.bind(null, [P(0, 0), P(it.w, 0), P(it.w, it.h), P(0, it.h)]);
   if (it.cat !== 'floor'){ rpoly([P(0, 0), P(it.w, 0), P(it.w, it.h), P(0, it.h)], 8); X.fillStyle = '#c2eaa6'; X.fill(); }
-  const ps = V.pathSet; V.pathSet = null; vDrawItem(id, 0, 0, 1.2, 0); V.pathSet = ps;
+  const ps = V.pathSet, fs = V.fenceSet; V.pathSet = V.fenceSet = null; vDrawItem(id, 0, 0, 1.2, 0); V.pathSet = ps; V.fenceSet = fs;
   X = prev;
 }
 

@@ -1,4 +1,4 @@
-const CACHE = 'bangul-sv-v65';
+const CACHE = 'bangul-sv-v66';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 // 설치할 때는 브라우저 임시 저장을 건너뛰고 항상 서버에서 새로 받아요.
