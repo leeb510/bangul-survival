@@ -526,7 +526,7 @@ const WPN = {
             desc:['적이 가장 많은 쪽으로 햇살을 쏴서 일직선의 적을 모두 맞혀요','햇살 공격력 +25%','햇살 2줄기 (반대쪽으로 하나 더)','햇살이 더 길어지고 더 자주 쏴요','햇살이 굵어지고, 맞은 적이 1초 동안 불타요'] },
   ladybug:{ name:'무당벌레 친구', noEvo:true, cd:[.5,.5,.5,.5,.4], n:[1,2,2,3,3], dmg:[10.5,10.5,15,15,19.5], bossDmg:[30,30,43,48,56],
             special:'공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요',
-            desc:['꼬마 무당벌레가 멀리 날아가 적을 콕 쏘고 돌아와요 (보스를 먼저 노리고, 보스에겐 30)','무당벌레 2마리','쏘는 공격력 +43%','무당벌레 3마리','공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요'] },
+            desc:['꼬마 무당벌레가 멀리 날아가 적을 콕 쏘고 돌아와요 (보스·중간보스를 먼저 노리고 대미지 30)','무당벌레 2마리','쏘는 공격력 +43%','무당벌레 3마리','공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요'] },
   mine:   { name:'솜사탕 지뢰', noEvo:true, cd:[1.4,1.4,1.4,1.0,1.0], dmg:[24,24,31.2,31.2,40], rad:[40,50,50,50,50], max:[4,4,6,6,6],
             special:'공격력 +28%, 터지면 주변 적이 0.6초 동안 기절해요',
             desc:['지나간 자리에 솜사탕 지뢰를 놓아요. 적이 밟으면 펑!','폭발 범위 +25%','지뢰 최대 6개, 공격력 +30%','더 자주 놓아요','공격력 +28%, 터지면 주변 적이 0.6초 동안 기절해요'] },
@@ -1220,6 +1220,9 @@ function updateBugs(w, dt){
   if (!w.bugs) w.bugs = [];
   while (w.bugs.length < n) w.bugs.push({ x:p.x, y:p.y - 20, st:0, cd:Math.random() * .4, tgt:null, ph:Math.random() * TAU });
   w.a += dt * 2.2;
+  // 보스·중간보스가 근처에 있으면 그쪽이 1순위 (진짜 보스 > 중간보스 > 가까운 순)
+  let prio = null, pd = Infinity;
+  for (const e of G.enemies){ if (e.dead || !(e.boss || e.elite)) continue; const d2 = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (d2 > 680 * 680) continue; const sc = d2 - (e.boss ? 1e7 : 0); if (sc < pd){ pd = sc; prio = e; } }
   let tg = null;
   w.bugs.forEach((b, i) => {
     b.ph += dt * 30;
@@ -1228,20 +1231,17 @@ function updateBugs(w, dt){
       const k = Math.min(1, dt * 8); b.x += (ox - b.x) * k; b.y += (oy - b.y) * k;
       b.cd -= dt;
       if (b.cd <= 0){
-        if (!tg){
-          // 근처에 보스가 있으면 모두 보스부터 쏘아요
-          let boss = null, bd = 520 * 520;
-          for (const e of G.enemies){ if (e.dead || !e.boss) continue; const d2 = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (d2 < bd){ bd = d2; boss = e; } }
-          tg = boss ? [boss] : nearestEnemies(w.bugs.length, 460);
-        }
+        if (!tg) tg = prio ? [prio] : nearestEnemies(w.bugs.length, 460);
         if (tg.length){ b.tgt = tg[i % tg.length]; b.st = 1; } else b.cd = .2;
       }
     } else if (b.st === 1){
+      // 일반 몬스터에게 가던 중이라도 보스가 나타나면 바로 방향을 틀어요
+      if (prio && b.tgt !== prio && !(b.tgt && !b.tgt.dead && (b.tgt.boss || b.tgt.elite))) b.tgt = prio;
       const e = b.tgt;
       if (!e || e.dead || Math.hypot(b.x - p.x, b.y - p.y) > 680){ b.st = 2; return; }
       const dx = e.x - b.x, dy = e.y - e.r * .7 - e.z * .5 - b.y, d = Math.hypot(dx, dy) || 1;
       if (d < e.r + 9){
-        damage(e, e.boss ? bdmg : dmg, dx / d, dy / d, .25);
+        damage(e, e.boss || e.elite ? bdmg : dmg, dx / d, dy / d, .25);
         if (L >= 4) addDot(e, dmg * .8, 3, '#7ee08a');
         burst(b.x, b.y, ['#ff5d6a', '#fff'], 3, { speed:60, g:0 });
         b.st = 2;
