@@ -233,6 +233,18 @@ body.touch .card .key{display:none}
 .vinv span{font-family:var(--font-display);font-size:9.5px;white-space:nowrap;max-width:46px;overflow:hidden;text-overflow:ellipsis}
 .vinv i{position:absolute;top:-6px;right:-6px;font-style:normal;min-width:17px;height:17px;font-size:10px!important;display:grid;place-items:center;background:var(--pink);color:#fff;border:2px solid var(--ink);border-radius:999px;font-family:var(--font-display);font-size:12px;padding:0 4px;box-sizing:border-box}
 .vinv.on{background:#fff3c4;outline:3px solid var(--pink);outline-offset:1px}
+.netbox{background:#fff;border:2.5px solid var(--ink);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.nethead{font-family:var(--font-display);font-weight:400;font-size:17px;color:#c2416f}
+.netrow{display:flex;gap:8px;flex-wrap:wrap}
+.netrow input{flex:1;min-width:150px;font:inherit;font-size:16px;padding:8px 12px;border:2px solid var(--ink);border-radius:12px;background:#fffdf8;color:var(--ink)}
+.netme{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center}
+.netme span{font-size:15px}
+.netname{font-family:var(--font-display);font-weight:400;font-size:20px;color:#7c6cb0}
+.nethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nethd .vbuy{font-size:14px;padding:3px 12px}
+.netrec{align-self:center;font-family:var(--font-display);font-size:12.5px;color:#fff;background:#ff8fb1;border-radius:999px;padding:1px 10px}
+.netsub{color:var(--soft);font-size:12.5px}
+.netf b{font-size:17px}
 .vshop{position:absolute;left:0;right:0;top:64px;bottom:0;overflow:auto;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(12px,env(safe-area-inset-left,0px));background:rgba(255,253,248,.97);z-index:1;display:flex;flex-direction:column;gap:10px;touch-action:pan-y}
 .vcats{display:flex;flex-wrap:wrap;gap:6px}
 .vchip{font-family:var(--font-display);font-size:14px;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;cursor:pointer;color:var(--ink)}
@@ -581,7 +593,7 @@ function load(k, d){ try { const v = localStorage.getItem(k); return v === null 
 function save(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 const metaRaw = load('bangul.sv.meta', {}) || {};
 const meta = { coins: metaRaw.coins || 0, up: Object.assign({ mhp:0, mpow:0, mspd:0, mmag:0, mxp:0, mcd:0, marmor:0, mcoin:0, mreroll:0, mrevive:0, mproj:0 }, metaRaw.up || {}),
-  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:15 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [], ownedCos: metaRaw.ownedCos || [], ach: metaRaw.ach || {}, house: metaRaw.house || null, equipBy: metaRaw.equipBy || null, stats: Object.assign({ kills:0, mid:0, candy:null, evo:[], clr8:[] }, metaRaw.stats || {}), equip: Object.assign({ aurora:null, wings:null, face:null }, metaRaw.equip || {}) };
+  cleared: STAGES.map((_, i) => !!(metaRaw.cleared || [])[i]), hardCleared: Array.from({ length:15 }, (_, i) => !!(metaRaw.hardCleared || [])[i]), best: metaRaw.best || {}, usedCoupons: metaRaw.usedCoupons || [], unlockedChars: metaRaw.unlockedChars || [], ownedCos: metaRaw.ownedCos || [], ach: metaRaw.ach || {}, house: metaRaw.house || null, equipBy: metaRaw.equipBy || null, net: metaRaw.net || null, stats: Object.assign({ kills:0, mid:0, candy:null, evo:[], clr8:[] }, metaRaw.stats || {}), equip: Object.assign({ aurora:null, wings:null, face:null }, metaRaw.equip || {}) };
 // 캐릭터마다 따로 입는 치장 (가진 치장템 중에서 골라요)
 if (!meta.equipBy){ meta.equipBy = {}; for (const c of CHARS) meta.equipBy[c.id] = Object.assign({ aurora:null, wings:null, face:null }, meta.equip || {}); }
 const saveMeta = () => { save('bangul.sv.meta', meta); try { if (!achBusy) achCheck(); } catch(e){} };
@@ -2981,7 +2993,178 @@ const VITEMS = {
   deck:      { name:'나무 데크',   cat:'floor',  w:1, h:1, price:15 },
   brick:     { name:'꽃돌길',      cat:'floor',  w:1, h:1, price:15 },
 };
+/* ---------- 온라인: 닉네임 · 추천 친구 · 친구 마을 놀러가기 (Firebase) ---------- */
+// Firebase 웹 앱 설정값 (apiKey · projectId). 비어 있으면 온라인 기능은 '준비 중'으로 보여요.
+const FB_CFG = { apiKey:'AIzaSyBi2r4JGg-Sfy2ZeVxWaSwOt7XZM1FFGG8', projectId:'bangul-island' };
+const NET_ON = () => !!(FB_CFG.apiKey && FB_CFG.projectId);
+const escH = v => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+const netErr = m => Object.assign(new Error(m), { user:true });
+let netAuth = load('bangul.net.auth', null);
+async function netToken(){
+  const now = Date.now();
+  if (netAuth && netAuth.idToken && netAuth.exp > now + 60000) return netAuth;
+  let r, j;
+  if (netAuth && netAuth.refresh){
+    r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_CFG.apiKey}`, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:'grant_type=refresh_token&refresh_token=' + encodeURIComponent(netAuth.refresh) });
+    if (r.ok){ j = await r.json(); netAuth = { uid:j.user_id, idToken:j.id_token, refresh:j.refresh_token, exp:now + (+j.expires_in || 3600) * 1000 }; save('bangul.net.auth', netAuth); return netAuth; }
+    if (r.status !== 400) throw new Error('auth ' + r.status);
+  }
+  r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_CFG.apiKey}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ returnSecureToken:true }) });
+  if (!r.ok) throw new Error('auth ' + r.status);
+  j = await r.json(); netAuth = { uid:j.localId, idToken:j.idToken, refresh:j.refreshToken, exp:now + (+j.expiresIn || 3600) * 1000 }; save('bangul.net.auth', netAuth); return netAuth;
+}
+const fsBase = () => `https://firestore.googleapis.com/v1/projects/${FB_CFG.projectId}/databases/(default)/documents/`;
+const fsEnc = o => { const f = {}; for (const [k, v] of Object.entries(o)) f[k] = typeof v === 'number' ? (Number.isInteger(v) ? { integerValue:String(v) } : { doubleValue:v }) : { stringValue:String(v) }; return { fields:f }; };
+const fsDec = d => { const o = {}; for (const [k, v] of Object.entries(d.fields || {})) o[k] = 'integerValue' in v ? +v.integerValue : 'doubleValue' in v ? v.doubleValue : v.stringValue; return o; };
+async function fsReq(method, path, body, query = ''){
+  const a = await netToken();
+  const r = await fetch(fsBase() + path + query, { method, headers:{ 'Authorization':'Bearer ' + a.idToken, 'Content-Type':'application/json' }, body:body ? JSON.stringify(body) : undefined });
+  if (r.status === 404) return null;
+  if (!r.ok){ const e = new Error('fs ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+const fsGet = async path => { const d = await fsReq('GET', path); return d ? fsDec(d) : null; };
+// 내 마을을 올릴 때 보내는 내용 (가구 배치 · 방울의 집 · 주민 · 주민 치장)
+function netPackVillage(){
+  const H = meta.house || {}, away = H.away || [];
+  const res = CHARS.filter(c => c.id !== 'random' && charUnlocked(c) && !away.includes(c.id)).map(c => c.id);
+  const eq = {}; for (const id of res){ const e = meta.equipBy && meta.equipBy[id]; if (e) eq[id] = { aurora:e.aurora || null, wings:e.wings || null, face:e.face || null }; }
+  return JSON.stringify({ v:1, size:H.size || [16, 12], bh:H.bhStyle || 'heart', placed:(H.placed || []).map(o => [o.id, o.x, o.y, o.f ? 1 : 0]), res, eq });
+}
+// 친구 마을 데이터는 믿지 않고 하나하나 확인해서 써요
+function netUnpackVillage(str){
+  let d; try { d = JSON.parse(str); } catch(e){ return null; }
+  if (!d || typeof d !== 'object') return null;
+  const sz = Array.isArray(d.size) ? d.size : [], w = Math.max(16, Math.min(32, sz[0] | 0)), h = Math.max(12, Math.min(24, sz[1] | 0));
+  const placed = [];
+  for (const q of (Array.isArray(d.placed) ? d.placed : []).slice(0, 800)){
+    if (!Array.isArray(q) || !Object.prototype.hasOwnProperty.call(VITEMS, q[0])) continue;
+    const o = { id:q[0], x:q[1] | 0, y:q[2] | 0, f:q[3] ? 1 : 0 }, [ww, hh] = vDims(o.id, o.f);
+    if (o.x < 0 || o.y < 0 || o.x + ww > w || o.y + hh > h) continue;
+    placed.push(o);
+  }
+  const bh = BH_STYLES.some(st => st.id === d.bh) ? d.bh : 'heart';
+  const res = [...new Set(Array.isArray(d.res) ? d.res : [])].filter(id => id !== 'random' && CHARS.some(c => c.id === id)).slice(0, 20);
+  const eq = {};
+  for (const id of res){ const e = (d.eq && typeof d.eq === 'object' && d.eq[id]) || {}; eq[id] = {}; for (const sl of ['aurora', 'wings', 'face']) eq[id][sl] = COS_LIST.some(it => it.slot === sl && it.id === e[sl]) ? e[sl] : null; }
+  return { H:{ size:[w, h], placed, bhStyle:bh, bhOwned:[bh], inv:{} }, res, eq };
+}
+const strHash = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return h; };
+async function netEnsure(){
+  const a = await netToken();
+  // 로그인이 새로 바뀌었으면(오래 안 들어와서 등) 새 자리에 다시 올려요
+  if (meta.net && meta.net.name && meta.net.uid !== a.uid){ meta.net.uid = a.uid; meta.net.lastV = 0; saveMeta(); }
+  return a;
+}
+async function netUpload(force){
+  if (!NET_ON() || !meta.net || !meta.net.name) return false;
+  const a = await netEnsure(), village = netPackVillage(), hv = strHash(village + meta.net.name);
+  if (!force && hv === meta.net.lastV) return false;
+  await fsReq('PATCH', 'players/' + a.uid, fsEnc({ name:meta.net.name, village, updated:Date.now() }));
+  meta.net.lastV = hv; meta.net.up = Date.now(); saveMeta();
+  return true;
+}
+async function netRegister(name){
+  const a = await netToken();
+  meta.net = { name, uid:a.uid, friends:(meta.net && meta.net.friends) || [], up:0, lastV:0 };
+  saveMeta();
+  await netUpload(true);
+}
+// 추천 친구: 최근에 마을을 올린 사람들 (닉네임 · 시간만 받아요)
+async function netRecs(force){
+  if (!force && V.recs && Date.now() - V.recsT < 60000) return V.recs;
+  const a = await netEnsure();
+  const d = await fsReq('GET', 'players', null, '?pageSize=60&orderBy=updated%20desc&mask.fieldPaths=name&mask.fieldPaths=updated');
+  const list = ((d && d.documents) || []).map(doc => Object.assign({ uid:doc.name.split('/').pop() }, fsDec(doc))).filter(q => q.uid !== a.uid && q.name).map(q => ({ uid:q.uid, name:String(q.name).slice(0, 12), updated:+q.updated || 0 }));
+  // 친구 이름이 바뀌었으면 맞춰 줘요
+  for (const f of meta.net.friends){ const q = list.find(x => x.uid === f.uid); if (q) f.name = q.name; }
+  V.recs = list; V.recsT = Date.now();
+  return list;
+}
+const netAgo = t => { if (!t) return ''; const m = Math.floor((Date.now() - t) / 60000); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.floor(m / 60) + '시간 전' : Math.floor(m / 1440) + '일 전'; };
+function netAddFriend(q){
+  if (meta.net.friends.some(f => f.uid === q.uid)) throw netErr('이미 친구예요');
+  if (meta.net.friends.length >= 50) throw netErr('친구는 50명까지 추가할 수 있어요');
+  const f = { uid:q.uid, name:q.name }; meta.net.friends.push(f); saveMeta(); return f;
+}
+let VISIT = null; // 친구 마을 구경 중일 때 그 마을 데이터
+async function netVisit(f){
+  await netEnsure();
+  const pl = await fsGet('players/' + f.uid);
+  if (!pl || !pl.village) throw netErr(`${f.name}님은 아직 마을을 올리지 않았어요`);
+  const d = netUnpackVillage(pl.village);
+  if (!d) throw netErr('마을을 불러오지 못했어요');
+  if (pl.name){ f.name = String(pl.name).slice(0, 12); saveMeta(); }
+  VISIT = Object.assign(d, { name:f.name });
+  V.npcs = null; V.sel = V.pick = null; V.camX = V.camY = 0; V.z = 1;
+}
+const netFail = e => vToast(e && e.user ? e.message : (navigator.onLine === false ? '인터넷에 연결되어 있지 않아요' : '서버와 연결하지 못했어요. 잠시 뒤에 다시 해 주세요'));
+function netRecsHtml(){
+  if (!V.recs) return '<p class="lead" style="margin:0">추천 친구를 불러오는 중이에요…</p>';
+  const list = V.recs.filter(q => !meta.net.friends.some(f => f.uid === q.uid));
+  if (!list.length) return '<p class="lead" style="margin:0">아직 추천할 친구가 없어요. 조금 뒤에 새로고침해 보세요!</p>';
+  return `<div class="vgrid">${list.map(q => `<div class="vcard netf"><span class="netrec">추천 친구</span><b>${escH(q.name)}</b><small>${q.updated ? netAgo(q.updated) + ' 마을을 꾸몄어요' : '방울섬 주민'}</small><div class="resrow"><button class="vbuy netadd" data-u="${escH(q.uid)}">친구 추가</button><button class="vbuy netgo2" data-u="${escH(q.uid)}">놀러가기</button></div></div>`).join('')}</div>`;
+}
+function netPanelHtml(){
+  if (!NET_ON()) return `<div class="netbox"><b class="nethead">친구 마을 놀러가기</b><p class="lead" style="margin:0">친구 기능을 준비하고 있어요. 조금만 기다려 주세요!</p></div>`;
+  const n = meta.net;
+  if (!n || !n.name) return `<div class="netbox"><b class="nethead">친구 마을 놀러가기</b>
+    <p class="lead" style="margin:0">닉네임을 정하면 다른 방울섬 친구들에게 추천 친구로 보여요. 서로의 방울섬 마을에 놀러갈 수 있어요.</p>
+    <div class="netrow"><input id="netName" maxlength="12" placeholder="닉네임 (12자까지)" autocomplete="off" aria-label="닉네임"><button class="vbuy" id="netJoin">시작하기</button></div></div>`;
+  const when = n.up ? new Date(n.up).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+  return `<div class="netbox"><div class="netme"><span>내 닉네임 <b class="netname">${escH(n.name)}</b></span><button class="vbuy" id="netUp">내 마을 올리기</button></div>
+    <small class="netsub">${when ? `마지막으로 올린 때: ${when}` : '아직 마을을 올리지 않았어요'} · 마을에서 나갈 때 자동으로 올라가요</small></div>
+    <p class="sethead" style="margin:0">내 친구 ${n.friends.length ? n.friends.length + '명' : ''}</p>
+    ${n.friends.length ? `<div class="vgrid">${n.friends.map((f, i) => `<div class="vcard netf"><b>${escH(f.name)}</b><small>내 친구</small><div class="resrow"><button class="vbuy netgo" data-i="${i}">놀러가기</button><button class="vbuy netdel" data-i="${i}">삭제</button></div></div>`).join('')}</div>` : '<p class="lead" style="margin:0">아래 추천 친구에서 친구를 추가해 보세요!</p>'}
+    <div class="nethd"><p class="sethead" style="margin:0">추천 친구</p><button class="vbuy" id="netRef">새로고침</button></div>
+    <div id="netRecs">${netRecsHtml()}</div>`;
+}
+function netBind(){
+  const busy = (b, on, txt) => { if (!b) return; if (on){ b.dataset.t = b.textContent; b.textContent = txt || '잠깐만요…'; b.disabled = true; } else { b.textContent = b.dataset.t || b.textContent; b.disabled = false; } };
+  const rerender = () => { if (V.tab !== 'net' || VISIT) return; const vs = screenEl.querySelector('.vshop'), keep = vs ? vs.scrollTop : 0; renderVillage(); const v2 = screenEl.querySelector('.vshop'); if (v2) v2.scrollTop = keep; };
+  const visit = async (f, b) => { busy(b, true, '가는 중…'); try { await netVisit(f); sfx('chest'); renderVillage(); vToast(`${f.name}님의 마을에 놀러왔어요!`); } catch(e){ busy(b, false); netFail(e); } };
+  const join = $('netJoin');
+  if (join){
+    const go = async () => {
+      const name = $('netName').value.trim().replace(/\s+/g, ' ');
+      if (!name){ vToast('닉네임을 적어 주세요'); sfx('hurt'); return; }
+      if (name.length > 12){ vToast('닉네임은 12자까지예요'); sfx('hurt'); return; }
+      busy(join, true);
+      try { await netRegister(name); sfx('chest'); rerender(); vToast(`반가워요, ${name}님!`); }
+      catch(e){ busy(join, false); netFail(e); }
+    };
+    join.addEventListener('click', go);
+    $('netName').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    return;
+  }
+  if (!meta.net || !meta.net.name) return;
+  const up = $('netUp');
+  if (up) up.addEventListener('click', async () => { busy(up, true, '올리는 중…'); try { await netUpload(true); sfx('gem'); rerender(); vToast('내 마을을 올렸어요! 친구들이 놀러올 수 있어요'); } catch(e){ busy(up, false); netFail(e); } });
+  screenEl.querySelectorAll('.netgo').forEach(b => b.addEventListener('click', () => visit(meta.net.friends[+b.dataset.i], b)));
+  screenEl.querySelectorAll('.netdel').forEach(b => { let armed = false; b.addEventListener('click', () => {
+    const i = +b.dataset.i, f = meta.net.friends[i];
+    if (!armed){ armed = true; b.textContent = '정말 삭제?'; b.classList.add('ask'); sfx('gem'); return; }
+    meta.net.friends.splice(i, 1); saveMeta(); sfx('buy'); rerender(); vToast(`${f.name}님을 친구 목록에서 뺐어요`);
+  }); });
+  const bindRecs = () => {
+    screenEl.querySelectorAll('.netadd').forEach(b => b.addEventListener('click', () => { const q = V.recs.find(x => x.uid === b.dataset.u); try { const f = netAddFriend(q); sfx('chest'); rerender(); vToast(`${f.name}님과 친구가 됐어요!`); } catch(e){ netFail(e); } }));
+    screenEl.querySelectorAll('.netgo2').forEach(b => b.addEventListener('click', () => visit(V.recs.find(x => x.uid === b.dataset.u), b)));
+  };
+  const load = async force => {
+    try { await netRecs(force); } catch(e){ const box = $('netRecs'); if (box) box.innerHTML = '<p class="lead" style="margin:0">추천 친구를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.</p>'; return; }
+    const box = $('netRecs'); if (!box || V.tab !== 'net' || VISIT) return;
+    box.innerHTML = netRecsHtml(); bindRecs();
+  };
+  bindRecs();
+  const ref = $('netRef');
+  if (ref) ref.addEventListener('click', async () => { busy(ref, true, '불러오는 중…'); sfx('buy'); await load(true); busy(ref, false); });
+  if (!V.recs || Date.now() - V.recsT > 60000) load(false);
+}
+// 마을에서 나갈 때 등 조용히 올리기 (실패해도 게임에는 영향 없어요)
+const netAutoUpload = () => { if (NET_ON() && meta.net && meta.net.name) netUpload(false).catch(() => {}); };
+
 function houseData(){
+  if (VISIT){ VW = VISIT.H.size[0]; VH = VISIT.H.size[1]; return VISIT.H; }
   if (!meta.house){
     meta.house = { inv:{ tree:2, flowerbed:2, fence:4, path:6 }, placed:[{ id:'bhouse', x:6, y:4, f:0 }] };
     save('bangul.sv.meta', meta);
@@ -3297,7 +3480,7 @@ function vDrawCanon(id, x, y, w, d, t, mir){
   switch (id){
     case 'bhouse': {
       const [ox, oy] = P(x, y);
-      X.save(); X.translate(ox, oy); drawBHouse(V.bhPreview || (meta.house && meta.house.bhStyle) || 'heart', t); X.restore();
+      X.save(); X.translate(ox, oy); drawBHouse(V.bhPreview || (VISIT ? VISIT.H.bhStyle : meta.house && meta.house.bhStyle) || 'heart', t); X.restore();
       break;
     }
     case 'mushhouse': {
@@ -3689,7 +3872,7 @@ function vLineClear(b, ax, ay, bx, by){
 }
 function vNpcsSync(){
   const away = houseData().away || [];
-  const want = CHARS.filter(c => charUnlocked(c) && !away.includes(c.id));
+  const want = VISIT ? VISIT.res.map(id => CHARS.find(c => c.id === id)).filter(Boolean) : CHARS.filter(c => charUnlocked(c) && !away.includes(c.id));
   V.npcs = (V.npcs || []).filter(n => want.includes(n.ch));
   const b = vBlocked();
   for (const ch of want) if (!V.npcs.some(n => n.ch === ch)){
@@ -3753,7 +3936,7 @@ function vDrawNpc(n, rt){
   const [sx, sy] = P(n.x + .5, n.y + .5);
   X.fillStyle = 'rgba(93,79,134,.2)'; X.beginPath(); X.ellipse(sx, sy, 10, 4.5, 0, 0, TAU); X.fill();
   X.save(); X.translate(sx, sy - n.z - (n.sit ? -2 : 0)); X.scale(.95, .95);
-  drawDressedChar(0, 0, n.fx, n.fy, n.walk, n.st === 'walk', rt + n.x, n.ch);
+  drawDressedChar(0, 0, n.fx, n.fy, n.walk, n.st === 'walk', rt + n.x, n.ch, VISIT ? VISIT.eq[n.ch.id] || { aurora:null, wings:null, face:null } : undefined);
   X.restore();
   if (n.bub){
     const b = n.bub, by = sy - n.z - 44;
@@ -3806,18 +3989,19 @@ function renderVillage(){
   screenEl.innerHTML = `<div class="vil">
     <canvas id="vcv" aria-label="방울섬 마을 꾸미기 화면"></canvas>
     <div class="vtop">
-      <button class="big alt" id="bBack">돌아가기</button>
-      <h2>방울섬 마을</h2>
-      <div class="seg vtabs" role="tablist"><button data-tab="deco" aria-pressed="${V.tab === 'deco'}">꾸미기</button><button data-tab="res" aria-pressed="${V.tab === 'res'}">주민</button><button data-tab="shop" aria-pressed="${V.tab === 'shop'}">상점</button></div>
+      <button class="big alt" id="bBack">${VISIT ? '돌아오기' : '돌아가기'}</button>
+      <h2>${VISIT ? `${escH(VISIT.name)}의 마을` : '방울섬 마을'}</h2>
+      ${VISIT ? '' : `<div class="seg vtabs" role="tablist"><button data-tab="deco" aria-pressed="${V.tab === 'deco'}">꾸미기</button><button data-tab="res" aria-pressed="${V.tab === 'res'}">주민</button><button data-tab="shop" aria-pressed="${V.tab === 'shop'}">상점</button><button data-tab="net" aria-pressed="${V.tab === 'net'}">친구</button></div>`}
       ${candyHtml(meta.coins)}
       ${V.tab === 'deco' && V.sel ? `<div class="vact"><b>${VITEMS[V.sel.id].name}</b><button id="vMove">옮기기</button><button id="vFlip">돌리기</button><button id="vStore">창고로</button><button id="vDesel">닫기</button></div>` : ''}
       ${V.tab === 'deco' && V.pick ? `<div class="vact pick"><b>${VITEMS[V.pick].name}</b> 놓을 칸을 누르세요 <span class="vleft">남은 개수 ${H.inv[V.pick] || 0}</span><button id="vFlipP">돌리기</button><button id="vCancel">그만 놓기</button></div>` : ''}
     </div>
     <p class="vmsg" id="vMsg" hidden></p>
-    ${V.tab === 'deco' ? `<span class="vsize">${(() => { const lv = vGrowLv(), nx = VGROW[lv + 1]; return `섬 ${VW}×${VH}칸${nx ? ` · 다음 ×${nx.k}: ${nx.need}` : ' · 최대 크기!'}`; })()}</span>` : ''}
-    ${V.tab === 'deco' ? `
+    ${VISIT ? `<span class="vsize">놀러온 마을이에요 · 주민을 눌러 인사해 보세요</span>` : ''}
+    ${V.tab === 'deco' && !VISIT ? `<span class="vsize">${(() => { const lv = vGrowLv(), nx = VGROW[lv + 1]; return `섬 ${VW}×${VH}칸${nx ? ` · 다음 ×${nx.k}: ${nx.need}` : ' · 최대 크기!'}`; })()}</span>` : ''}
+    ${V.tab === 'deco' || VISIT ? `
     <div class="vzoom"><button id="vZin" aria-label="크게 보기">＋</button><button id="vZout" aria-label="작게 보기">－</button></div>
-<div class="vtray"><span class="vtl">창고</span>${owned.length ? owned.map(id => `<button class="vinv${V.pick === id ? ' on' : ''}" data-id="${id}" aria-label="${VITEMS[id].name} ${H.inv[id]}개"><canvas width="96" height="96" data-vp="${id}" aria-hidden="true"></canvas><i>${H.inv[id]}</i></button>`).join('') : '<span class="vempty">창고가 비었어요. [상점]에서 가구를 사 보세요!</span>'}</div>` : `
+${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length ? owned.map(id => `<button class="vinv${V.pick === id ? ' on' : ''}" data-id="${id}" aria-label="${VITEMS[id].name} ${H.inv[id]}개"><canvas width="96" height="96" data-vp="${id}" aria-hidden="true"></canvas><i>${H.inv[id]}</i></button>`).join('') : '<span class="vempty">창고가 비었어요. [상점]에서 가구를 사 보세요!</span>'}</div>`}` : `
     <div class="vshop">
       <p class="sethead" style="margin:0">방울의 집 업그레이드</p>
       <div class="vgrid">${BH_STYLES.map(st => { const own = H.bhOwned.includes(st.id), on = H.bhStyle === st.id; return `<div class="vcard bhcard${on ? ' live' : ''}"><canvas width="140" height="120" data-bh="${st.id}" aria-hidden="true"></canvas><b>${st.name}</b><small>${on ? '지금 모습이에요' : own ? '가지고 있어요' : '방울의 집 모습 바꾸기'}</small><button class="vbuy bhbtn" data-id="${st.id}">${on ? '적용 중' : own ? '바꾸기' : '별사탕 ' + st.price}</button></div>`; }).join('')}</div>
@@ -3826,7 +4010,8 @@ function renderVillage(){
       <div class="vgrid">${shopItems.map(id => { const it = VITEMS[id], have = (H.inv[id] || 0) + placedN(id); return `<div class="vcard"><canvas width="140" height="120" data-vp="${id}" aria-hidden="true"></canvas><b>${it.name}</b><small>${it.w}×${it.h}칸${have ? ` · 가진 것 ${have}` : ''}</small><button class="vbuy" data-id="${id}">별사탕 ${it.price}</button></div>`; }).join('')}</div>
     </div>`}
   </div>`;
-  if (V.tab === 'res'){
+  if (V.tab === 'net' && !VISIT){ screenEl.querySelector('.vshop').innerHTML = netPanelHtml(); }
+  if (V.tab === 'res' && !VISIT){
     const away = H.away || [], vs = screenEl.querySelector('.vshop');
     const liveN = CHARS.filter(c => charUnlocked(c) && !away.includes(c.id)).length;
     vs.innerHTML = `<p class="lead" style="margin:0">마을에서 지낼 캐릭터를 골라요. 지금 <b>${liveN}명</b>이 마을에 살고 있어요.</p>
@@ -3848,9 +4033,12 @@ function renderVillage(){
   const th = screenEl.querySelector('.vtop').offsetHeight;
   screenEl.querySelectorAll('.vzoom, .vshop, .vsize').forEach(el => { el.style.top = (th + (el.classList.contains('vshop') ? 0 : 8)) + 'px'; });
   const vm = $('vMsg'); if (vm) vm.style.top = (th + 56) + 'px';
-  $('bBack').addEventListener('click', () => { V.sel = V.pick = null; V.cv = null; screenEl.classList.remove('vilmode'); state = 'title'; setScreen('title'); });
-  screenEl.querySelectorAll('.vtabs button').forEach(b => b.addEventListener('click', () => { V.tab = b.dataset.tab; V.sel = V.pick = null; renderVillage(); }));
-  if (V.tab === 'res'){
+  $('bBack').addEventListener('click', () => {
+    if (VISIT){ VISIT = null; V.npcs = null; V.sel = V.pick = null; V.camX = V.camY = 0; V.z = 1; V.tab = 'net'; sfx('buy'); renderVillage(); return; }
+    V.sel = V.pick = null; V.cv = null; screenEl.classList.remove('vilmode'); state = 'title'; setScreen('title'); netAutoUpload(); });
+  screenEl.querySelectorAll('.vtabs button').forEach(b => b.addEventListener('click', () => { V.tab = b.dataset.tab; V.sel = V.pick = null; renderVillage(); if (V.tab === 'net') netAutoUpload(); }));
+  if (V.tab === 'net' && !VISIT) netBind();
+  if (V.tab === 'res' && !VISIT){
     screenEl.querySelectorAll('.resdress').forEach(b => b.addEventListener('click', () => { sfx('buy'); outfitPopup(CHARS.find(c => c.id === b.dataset.id), () => { const keep = screenEl.querySelector('.vshop').scrollTop; renderVillage(); screenEl.querySelector('.vshop').scrollTop = keep; }); }));
     screenEl.querySelectorAll('.resbtn').forEach(b => b.addEventListener('click', () => {
       const id = b.dataset.id, away = H.away = H.away || [], i = away.indexOf(id), c = CHARS.find(x => x.id === id);
@@ -3859,7 +4047,7 @@ function renderVillage(){
       const keep = screenEl.querySelector('.vshop').scrollTop; renderVillage(); screenEl.querySelector('.vshop').scrollTop = keep;
     }));
   }
-  if (V.tab === 'shop'){
+  if (V.tab === 'shop' && !VISIT){
     screenEl.querySelectorAll('.bhbtn').forEach(b => {
       let armed = false;
       b.addEventListener('click', () => {
@@ -3886,7 +4074,7 @@ function renderVillage(){
         vToast(`${it.name}을(를) 샀어요! 꾸미기 탭 창고에 들어갔어요`);
       });
     });
-  } else if (V.tab === 'deco'){
+  } else if (V.tab === 'deco' || VISIT){
     $('vZin').addEventListener('click', () => { V.z = Math.min(5, V.z * 1.25); });
     $('vZout').addEventListener('click', () => { V.z = Math.max(.4, V.z / 1.25); if (V.z <= .81){ V.camX = V.camY = 0; } });
     screenEl.querySelectorAll('.vinv').forEach(b => b.addEventListener('click', () => { const id = b.dataset.id; V.sel = null; V.pick = V.pick === id ? null : id; V.flip = 0; V.moveFrom = null; V.ghost = null; sfx('buy'); renderVillage(); }));
@@ -3971,6 +4159,7 @@ function renderVillage(){
       if (moved) return;
       const npc = vNpcAt(e.clientX - r.left, e.clientY - r.top);
       if (npc){ vNpcTap(npc); return; }
+      if (VISIT) return; // 친구 마을은 구경만 해요
       const o = vAt(tx, ty);
       V.sel = o; if (o) sfx('buy'); renderVillage();
     };
@@ -3998,7 +4187,7 @@ function setScreen(kind){
         const lock = hardMode ? !hardUnlocked(i) : !unlocked(i), first = s.challenge && !(list[li - 1] && list[li - 1].s.challenge), done = hardMode ? meta.hardCleared[i] : meta.cleared[i];
         return `${first ? '<span class="chdiv" aria-hidden="true">챌린지</span>' : ''}<button class="stage${i === selStage ? ' sel' : ''}${s.challenge ? ' chal' : ''}${hardMode ? ' hard' : ''}" data-i="${i}" role="radio" aria-checked="${i === selStage}" ${lock ? 'disabled' : ''}><span class="sw" style="background:${s.ground}"></span><span class="sn">${s.challenge ? '챌린지 ' + s.cnum : (hardMode ? '하드 ' : '') + s.num + '단계'}</span><span>${s.name}</span><span class="ss">${lock ? '잠김' : done ? '클리어' : '도전 중'}</span></button>`; }).join('')}</div>
       <p class="hint">${st.challenge ? `<span class="rulechips">${st.ruleText.map(r => `<span>${r}</span>`).join('')}</span> ` : ''}${st.desc}${best ? ` 최고 생존 ${fmt(best)}` : ''}${hardMode ? (selStage < HARD_COUNT - 1 && !hardUnlocked(selStage + 1) ? ` 클리어하면 하드 ${selStage + 2}단계가 열려요.` : '') : !hardOpen && selStage === LAST_NORMAL ? ' 클리어하면 하드 모드가 열려요.' : ''}${hardMode ? '' : (() => { const nx = STAGES.map((s2, j) => j).filter(j => (STAGES[j].req ?? j - 1) === selStage && !unlocked(j)); if (!nx.length) return ''; const nm = STAGES[nx[0]].name, c = nm.charCodeAt(nm.length - 1); return ` 클리어하면 ${nm}${c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? '이' : '가'} 열려요.`; })()}</p>
-      <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">도감</button></div>
+      <div class="row"><button class="big" id="bStart">출발!</button><button class="big alt" id="bShop">별사탕 상점</button><button class="big alt" id="bBook">도감</button><button class="big alt" id="bFriend">친구</button></div>
     </div></div>`;
     heroCv = $('heroCv');
     $('bChar').addEventListener('click', () => setScreen('chars'));
@@ -4013,8 +4202,9 @@ function setScreen(kind){
     $('bStart').addEventListener('click', () => { ensureAudio(); newRun(selStage); state = 'play'; setScreen(null); if (randChar){ toast(`랜덤 캐릭터: ${G.ch.name}!`); sfx('chest'); } else if (G.st.challenge) toast('챌린지: ' + G.st.ruleText.join(' · ')); else if (G.st.hard) toast('하드 모드: 몬스터가 더 많고 튼튼해요'); });
     $('bShop').addEventListener('click', () => { state = 'shop'; setScreen('shop'); });
     $('bBook').addEventListener('click', () => { bookBack = 'title'; setScreen('book'); });
+    $('bFriend').addEventListener('click', () => { VISIT = null; V.tab = 'net'; V.sel = V.pick = null; V.npcs = null; V.camX = V.camY = 0; setScreen('village'); netAutoUpload(); });
     $('bAch').addEventListener('click', () => setScreen('ach'));
-    $('bVil').addEventListener('click', () => { V.tab = 'deco'; V.sel = V.pick = null; V.npcs = null; V.camX = V.camY = 0; setScreen('village'); const H = houseData(); if (H.grew){ H.grew = false; saveMeta(); vToast(`방울섬이 커졌어요! 이제 ${VW}×${VH}칸이에요`); sfx('chest'); } });
+    $('bVil').addEventListener('click', () => { VISIT = null; V.tab = 'deco'; V.sel = V.pick = null; V.npcs = null; V.camX = V.camY = 0; setScreen('village'); const H = houseData(); if (H.grew){ H.grew = false; saveMeta(); vToast(`방울섬이 커졌어요! 이제 ${VW}×${VH}칸이에요`); sfx('chest'); } });
     $('bSettings').addEventListener('click', () => { settingsBack = 'title'; setScreen('settings'); });
     screenEl.insertAdjacentHTML('beforeend', '<div class="credit">제작자 Leeb</div>');
     paintIcons(screenEl);

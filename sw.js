@@ -1,4 +1,4 @@
-const CACHE = 'bangul-sv-v67';
+const CACHE = 'bangul-sv-v71';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 // 설치할 때는 브라우저 임시 저장을 건너뛰고 항상 서버에서 새로 받아요.
@@ -16,6 +16,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // 친구·랭킹 서버(Firebase)와 주고받는 건 저장하지 않고 그대로 보내요.
+  if (url.host.endsWith('googleapis.com')) return;
   const isPage = req.mode === 'navigate' || (url.origin === location.origin && (url.pathname.endsWith('/') || url.pathname.endsWith('.html')));
 
   // 게임 화면(index.html)은 인터넷이 되면 항상 최신 버전을 먼저 받아요. 안 되면 저장된 걸로 열어요.
