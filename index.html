@@ -245,6 +245,8 @@ body.touch .card .key{display:none}
 .netrec{align-self:center;font-family:var(--font-display);font-size:12.5px;color:#fff;background:#ff8fb1;border-radius:999px;padding:1px 10px}
 .netsub{color:var(--soft);font-size:12.5px}
 .netf b{font-size:17px}
+.vrot svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;display:block;margin:auto}
+.vrot svg .f{fill:currentColor;stroke-width:1.4}
 .vshop{position:absolute;left:0;right:0;top:64px;bottom:0;overflow:auto;padding:12px max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(12px,env(safe-area-inset-left,0px));background:rgba(255,253,248,.97);z-index:1;display:flex;flex-direction:column;gap:10px;touch-action:pan-y}
 .vcats{display:flex;flex-wrap:wrap;gap:6px}
 .vchip{font-family:var(--font-display);font-size:14px;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;cursor:pointer;color:var(--ink)}
@@ -3184,7 +3186,7 @@ function houseData(){
   VW = H.size[0]; VH = H.size[1];
   return H;
 }
-const V = { cv:null, tab:'deco', cat:'all', sel:null, pick:null, ghost:null, moveFrom:null, camX:0, camY:0, z:1, drag:null, msg:'', msgT:0 };
+const V = { rot:0, rotAnim:null, cv:null, tab:'deco', cat:'all', sel:null, pick:null, ghost:null, moveFrom:null, camX:0, camY:0, z:1, drag:null, msg:'', msgT:0 };
 function vToast(t){ V.msg = t; V.msgT = 1.6; const el = document.getElementById('vMsg'); if (el){ el.textContent = t; el.hidden = false; } }
 // ===== 아이소메트릭(입체) 마을 그리기 =====
 const HW = 32, HH = 16, SLAB = 34;
@@ -3200,7 +3202,32 @@ function vAt(tx, ty){
   const H = houseData(), hit = H.placed.filter(o => { const q = vFoot(o); return tx >= q.x0 && tx <= q.x1 && ty >= q.y0 && ty <= q.y1; });
   return hit.find(o => VITEMS[o.id].cat !== 'floor') || hit[0] || null;
 }
-const P = (gx, gy, z = 0) => [(gx - gy) * HW, (gx + gy) * HH - z];
+// 가구를 그릴 때만 GT가 켜져요: 가구 설계 좌표 → (돌린) 화면 방향 좌표
+let GT = null;
+const P = (gx, gy, z = 0) => { if (GT){ const q = GT(gx, gy); gx = q[0]; gy = q[1]; } return [(gx - gy) * HW, (gx + gy) * HH - z]; };
+function gRect(x0, y0, w, d){ if (!GT) return [x0, y0, w, d]; const a = GT(x0, y0), b = GT(x0 + w, y0 + d); return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])]; }
+const noGT = fn => { const g = GT; GT = null; try { return fn(); } finally { GT = g; } };
+// 설계상의 면(L=앞 · R=오른쪽 · B=뒤 · W=왼쪽)이 지금 화면에서 어느 면인지: 'L'/'R'이면 보이고, 아니면 가려져요
+function gFace(face, x0, y0, w, d, us){
+  if (!GT) return face === 'L' || face === 'R' ? [face, x0, y0, w, d, us] : null;
+  const n = { L:[0, 1], R:[1, 0], B:[0, -1], W:[-1, 0] }[face], o = GT(0, 0), q = GT(n[0], n[1]), vx = Math.round(q[0] - o[0]), vy = Math.round(q[1] - o[1]);
+  const vf = vx === 0 && vy === 1 ? 'L' : vx === 1 && vy === 0 ? 'R' : null;
+  if (!vf) return null;
+  const [rx, ry, rw, rd] = gRect(x0, y0, w, d);
+  const mu = u => { const c = face === 'L' ? [x0 + u, y0 + d] : face === 'R' ? [x0 + w, y0 + d - u] : face === 'B' ? [x0 + u, y0] : [x0, y0 + d - u], v = GT(c[0], c[1]); return vf === 'L' ? v[0] - rx : (ry + rd) - v[1]; };
+  return [vf, rx, ry, rw, rd, us.map(mu)];
+}
+// 집처럼 앞·뒤·옆이 다른 것: 화면 방향에 맞춘 공간에서 그려요. info.L/R = 지금 보이는 앞쪽 긴 면 / 옆면이 원래 어느 면인지
+function gView(x0, y0, w, d, fn){
+  if (!GT) return fn(x0, y0, w, d, { L:'front', R:'east', mirror:false, pt:(a, b) => [a, b] });
+  const G = GT, o = G(0, 0), ax = G(1, 0), mirror = Math.round(Math.abs(ax[0] - o[0])) === 0;
+  const toD = v => mirror ? [v[1], v[0]] : v, Dp = (a, b) => toD(G(a, b)), d0 = Dp(0, 0);
+  const nameOf = (dx, dy) => { for (const [nm, n] of [['front', [0, 1]], ['back', [0, -1]], ['east', [1, 0]], ['west', [-1, 0]]]){ const q = Dp(n[0], n[1]); if (Math.round(q[0] - d0[0]) === dx && Math.round(q[1] - d0[1]) === dy) return nm; } return 'front'; };
+  const info = { L:nameOf(0, 1), R:nameOf(1, 0), mirror, pt:Dp };
+  const [rx, ry, rw, rd] = gRect(x0, y0, w, d), [dx0, dy0, dw, dd] = mirror ? [ry, rx, rd, rw] : [rx, ry, rw, rd];
+  const g = GT; GT = null; X.save(); if (mirror) X.scale(-1, 1);
+  try { return fn(dx0, dy0, dw, dd, info); } finally { X.restore(); GT = g; }
+}
 function shade(hex, f){
   const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = n >> 8 & 255, b = n & 255;
   if (f > 0){ r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
@@ -3220,6 +3247,7 @@ const ink = (lw = 2) => { X.lineWidth = lw; X.strokeStyle = VINK; X.lineJoin = '
 const softLine = (pts, a = .28, lw = 1.4) => { X.beginPath(); X.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) X.lineTo(pts[i][0], pts[i][1]); X.lineWidth = lw; X.strokeStyle = `rgba(141,112,100,${a})`; X.lineCap = 'round'; X.stroke(); };
 // 말랑한 둥근 상자 (윗면 · 왼쪽 앞면 · 오른쪽 앞면)
 function iBox(x0, y0, w, d, h, col, z = 0, o = {}){
+  if (GT){ const r = gRect(x0, y0, w, d); return noGT(() => iBox(r[0], r[1], r[2], r[3], h, col, z, o)); }
   const A = P(x0, y0, z + h), B = P(x0 + w, y0, z + h), C = P(x0 + w, y0 + d, z + h), D = P(x0, y0 + d, z + h);
   const B0 = P(x0 + w, y0, z), C0 = P(x0 + w, y0 + d, z), D0 = P(x0, y0 + d, z);
   const r = o.r != null ? o.r : Math.min(7, h * .3, (w + d) * 5), sil = o.noTop ? [D, C, B, B0, C0, D0] : [A, B, B0, C0, D0, D];
@@ -3235,6 +3263,7 @@ function iBox(x0, y0, w, d, h, col, z = 0, o = {}){
   rpoly(sil, r); ink(o.lw || 2);
 }
 function facePath(face, x0, y0, w, d, u0, z0, u1, z1, round){
+  if (GT || face === 'B' || face === 'W'){ const m = gFace(face, x0, y0, w, d, [u0, u1]); if (!m){ X.beginPath(); return false; } return noGT(() => facePath(m[0], m[1], m[2], m[3], m[4], Math.min(m[5][0], m[5][1]), z0, Math.max(m[5][0], m[5][1]), z1, round)); }
   X.save();
   if (face === 'L'){ const [ox, oy] = P(x0, y0 + d); X.transform(HW, HH, 0, -1, ox, oy); }
   else { const [ox, oy] = P(x0 + w, y0 + d); X.transform(-HW, -HH, 0, -1, ox, oy); }
@@ -3244,6 +3273,7 @@ function facePath(face, x0, y0, w, d, u0, z0, u1, z1, round){
   X.restore();
 }
 function faceDot(face, x0, y0, w, d, u, z, r, col){
+  if (GT || face === 'B' || face === 'W'){ const m = gFace(face, x0, y0, w, d, [u]); if (!m) return; return noGT(() => faceDot(m[0], m[1], m[2], m[3], m[4], m[5][0], z, r, col)); }
   const [px, py] = face === 'L' ? P(x0 + u, y0 + d, z) : P(x0 + w, y0 + d - u, z), rot = face === 'L' ? .5 : -.5;
   X.beginPath(); X.ellipse(px, py, r * .7, r, rot, 0, TAU); X.fillStyle = '#fffdf8'; X.fill(); ink(1.8);
   X.beginPath(); X.ellipse(px, py, r * .48, r * .72, rot, 0, TAU); X.fillStyle = col; X.fill();
@@ -3282,6 +3312,7 @@ function iHipCap(A, B, col){
   iBall(B[0], B[1] + 1, 3.4, '#ffffff', { lw:1.5 });
 }
 function iRoof(x0, y0, w, d, zb, rh, col, o = .22){
+  if (GT) return gView(x0, y0, w, d, (a, b, c2, d2) => iRoof(a, b, c2, d2, zb, rh, col, o));
   const ym = y0 + d / 2, xm = x0 + w / 2; rh *= 1.55; const zr = zb + rh;
   // 용마루: 긴 쪽 방향으로, 정사각형이면 꼭짓점 하나
   const half = Math.max(0, (w - d) / 2) * RIDGE_K;
@@ -3308,6 +3339,7 @@ function iRoof(x0, y0, w, d, zb, rh, col, o = .22){
   rpoly([hA, hB, hC, hD], 3); X.fill();
 }
 function iDoor(face, x0, y0, w, d, u, wd, ht, col){
+  if (GT || face === 'B' || face === 'W'){ const m = gFace(face, x0, y0, w, d, [u]); if (!m) return; return noGT(() => iDoor(m[0], m[1], m[2], m[3], m[4], m[5][0], wd, ht, col)); }
   facePath(face, x0, y0, w, d, u - wd / 2, 0, u + wd / 2, ht, true); X.fillStyle = col; X.fill(); ink(1.8);
   facePath(face, x0, y0, w, d, u - wd / 2 + .06, 2, u + wd / 2 - .06, ht - 3, true); X.fillStyle = 'rgba(255,255,255,.25)'; X.fill();
   const [kx, ky] = face === 'L' ? P(x0 + u + wd * .25, y0 + d, ht * .42) : P(x0 + w, y0 + d - u - wd * .25, ht * .42);
@@ -3323,6 +3355,7 @@ const PC = { cream:'#fff6e6', peach:'#ffd9c2', pink:'#ffc8dc', rose:'#ffb3c7', l
 
 /* ---------- 파스텔 농장 스타일 도우미 ---------- */
 function fBox(x, y, w, d, h, z, top, lf, rt, lw = 1.5){
+  if (GT){ const r = gRect(x, y, w, d); return noGT(() => fBox(r[0], r[1], r[2], r[3], h, z, top, lf, rt, lw)); }
   poly([P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x, y + d, z + h)]); X.fillStyle = lf; X.fill(); ink(lw);
   poly([P(x + w, y + d, z), P(x + w, y, z), P(x + w, y, z + h), P(x + w, y + d, z + h)]); X.fillStyle = rt; X.fill(); ink(lw);
   if (top){ poly([P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)]); X.fillStyle = top; X.fill(); ink(lw); }
@@ -3352,6 +3385,9 @@ function farmTree(sx, sy, k, t, fruit){
 }
 // 박공 기와지붕 오두막 (방울의 집 · 꽃 오두막)
 function farmHouse(bx, by, bw, bd, o){
+  return gView(bx, by, bw, bd, (x, y, w, d, info) => farmHouseV(x, y, w, d, Object.assign({ canon:[bx, by, bw, bd] }, o), info));
+}
+function farmHouseV(bx, by, bw, bd, o, info){
   const t = o.t || 0, z0 = 9, wh = o.wh || 42, rh = o.rh || 40, zb = z0 + wh, zr = zb + rh, ym = by + bd / 2, ov = o.ov || .26, k = wh / 42;
   const rc = o.roof, rTop = shade(rc, .45), rLine = shade(rc, -.25), rEave = shade(rc, -.2), rBack = shade(rc, -.1), rRidge = shade(rc, -.06);
   const wall = o.wall || '#fffaf0', wall2 = o.wall2 || '#f6e8d6', beam = o.beam || '#ebc6a2', beam2 = o.beam2 || '#dcb08c', wood = '#f0cba6';
@@ -3382,9 +3418,10 @@ function farmHouse(bx, by, bw, bd, o){
     fBox(bx + u - wd / 2 - .05, by + bd, wd + .1, .13, 5, z0 + v0 - 5, wood, '#e3b994', '#d2a480', 1.1);
     for (let q = 0; q < 4; q++){ const pp = P(bx + u - wd / 2 + .04 + q * (wd / 3.3), by + bd + .065, z0 + v0); X.fillStyle = '#8fcd7a'; X.beginPath(); X.arc(pp[0], pp[1], 2.4, 0, TAU); X.fill(); X.fillStyle = ['#ffa3b0', '#ffe792', '#ffc6df', '#d2c0ff'][q]; X.beginPath(); X.arc(pp[0], pp[1] - 2.2, 2.2, 0, TAU); X.fill(); }
   };
-  for (const f of o.wins) win(FL, f * bw, Math.min(.55, bw * .2), false);
-  // 아치 나무문 + 돌계단 + 등불
-  { const u = o.doorU * bw, wd = Math.min(.6, bw * .3), ht = 27 * k, arc = (inset, top, ry) => { const pts = [FL(u - wd / 2 + inset, 0)]; for (let q = 0; q <= 12; q++){ const a = Math.PI - q / 12 * Math.PI; pts.push(FL(u + Math.cos(a) * (wd / 2 - inset), top + Math.sin(a) * ry)); } pts.push(FL(u + wd / 2 - inset, 0)); return pts; };
+  const front = info.L === 'front';
+  for (const f of front ? o.wins : (o.backWins || (bw > 2 ? [.27, .73] : [.5]))) win(FL, f * bw, Math.min(.55, bw * .2), false);
+  // 아치 나무문 + 돌계단 + 등불 (앞면이 보일 때만)
+  if (front){ const u = o.doorU * bw, wd = Math.min(.6, bw * .3), ht = 27 * k, arc = (inset, top, ry) => { const pts = [FL(u - wd / 2 + inset, 0)]; for (let q = 0; q <= 12; q++){ const a = Math.PI - q / 12 * Math.PI; pts.push(FL(u + Math.cos(a) * (wd / 2 - inset), top + Math.sin(a) * ry)); } pts.push(FL(u + wd / 2 - inset, 0)); return pts; };
     poly(arc(0, ht, 7)); X.fillStyle = '#ffffff'; X.fill(); ink(1.3);
     poly(arc(.06, ht - 1, 6)); X.fillStyle = o.door || '#ffc9d6'; X.fill(); ink(1.2);
     X.strokeStyle = 'rgba(190,120,140,.4)'; X.lineWidth = 1.1; X.beginPath(); for (const du of [-.12, 0, .12]){ const p1 = FL(u + du * wd / .6, 1), p2 = FL(u + du * wd / .6, ht + 4); X.moveTo(p1[0], p1[1]); X.lineTo(p2[0], p2[1]); } X.stroke();
@@ -3396,12 +3433,14 @@ function farmHouse(bx, by, bw, bd, o){
   // ---- 지붕 ----
   const A = P(bx - ov, by + bd + ov, zb), B = P(bx + bw + ov, by + bd + ov, zb), C = P(bx + bw + ov, ym, zr), D = P(bx - ov, ym, zr), E = P(bx + bw + ov, by - ov, zb), F = P(bx - ov, by - ov, zb);
   poly([D, C, E, F]); X.fillStyle = rBack; X.fill(); ink(1.6);
-  if (o.chimney){ const cx = bx + bw * .19, cy = ym - .45, zc = zb + rh * .55; fBox(cx, cy, .4, .4, 32, zc, '#ffd9cb', '#f6bfac', '#e6a894', 1.4);
+  const cpt = o.chimney ? info.pt(o.canon[0] + o.canon[2] * .19 + .2, o.canon[1] + o.canon[3] / 2 - .25) : null, chimBack = cpt && cpt[1] < ym;
+  const chimney = () => { const cx = cpt[0] - .2, cy = cpt[1] - .2, zc = zb + rh * (1 - Math.min(1, Math.abs(cpt[1] - ym) / (bd / 2 + ov))) - 4; fBox(cx, cy, .4, .4, 32, zc, '#ffd9cb', '#f6bfac', '#e6a894', 1.4);
     X.strokeStyle = 'rgba(200,125,105,.35)'; X.lineWidth = 1; X.beginPath(); for (let v = 6; v < 32; v += 6){ const p1 = P(cx, cy + .4, zc + v), p2 = P(cx + .4, cy + .4, zc + v), p3 = P(cx + .4, cy, zc + v); X.moveTo(p1[0], p1[1]); X.lineTo(p2[0], p2[1]); X.lineTo(p3[0], p3[1]); } X.stroke();
     fBox(cx - .05, cy - .05, .5, .5, 5, zc + 32, '#b39892', '#efae9a', '#dc9a86', 1.3);
     const [sx, sy] = P(cx + .2, cy + .2, zc + 40);
     for (let q = 0; q < 3; q++){ const ph = (t * .35 + q / 3) % 1; X.beginPath(); X.arc(sx + ph * 18, sy - ph * 34, 5 + ph * 7, 0, TAU); X.fillStyle = `rgba(255,255,255,${.95 - ph * .7})`; X.fill(); X.strokeStyle = `rgba(160,150,170,${.35 - ph * .3})`; X.lineWidth = 1; X.stroke(); }
-  }
+  };
+  if (chimBack) chimney();
   // 박공 벽
   { const g1 = FR(0, wh), g2 = FR(bd, wh), g3 = P(bx + bw, ym, zr - 3); poly([g1, g2, g3]); X.fillStyle = wall2; X.fill(); ink(1.4);
     X.strokeStyle = 'rgba(200,160,125,.3)'; X.lineWidth = 1; X.beginPath(); for (let v = wh + 7; v < wh + rh - 6; v += 7){ const f = (v - wh) / (rh - 3), p1 = P(bx + bw, by + bd - f * bd / 2, z0 + v), p2 = P(bx + bw, by + f * bd / 2, z0 + v); X.moveTo(p1[0], p1[1]); X.lineTo(p2[0], p2[1]); } X.stroke();
@@ -3428,59 +3467,87 @@ function farmHouse(bx, by, bw, bd, o){
   X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 6.5; X.beginPath(); X.moveTo(B[0], B[1] + 2); X.lineTo(C[0], C[1]); X.stroke(); X.strokeStyle = wood; X.lineWidth = 3.6; X.stroke();
   X.strokeStyle = VINK; X.lineWidth = 8; X.beginPath(); X.moveTo(D[0], D[1]); X.lineTo(C[0], C[1]); X.stroke(); X.strokeStyle = rRidge; X.lineWidth = 5; X.stroke();
   fLine([D[0] + 2, D[1] - 1.6], [C[0] - 2, C[1] - 1.6], 'rgba(255,240,235,.8)', 1.6);
-  if (o.heart){ const [hx, hy] = FL(o.doorU * bw, wh + 2); X.save(); X.translate(hx, hy + 4); X.beginPath(); X.moveTo(0, 5); X.bezierCurveTo(-9, -2, -5, -9, 0, -4); X.bezierCurveTo(5, -9, 9, -2, 0, 5); X.fillStyle = '#ffb3c7'; X.fill(); ink(1.3); X.restore(); }
+  if (cpt && !chimBack) chimney();
+  if (o.heart && front){ const [hx, hy] = FL(o.doorU * bw, wh + 2); X.save(); X.translate(hx, hy + 4); X.beginPath(); X.moveTo(0, 5); X.bezierCurveTo(-9, -2, -5, -9, 0, -4); X.bezierCurveTo(5, -9, 9, -2, 0, 5); X.fillStyle = '#ffb3c7'; X.fill(); ink(1.3); X.restore(); }
   return { ridge:[(D[0] + C[0]) / 2, (D[1] + C[1]) / 2] };
 }
 // 섬 땅 (잔디 · 흙길 질감 · 흙 절벽)
-function vDrawGround(rt){
+function vDrawGround(rt, DW, DH, phi){
+  if (phi){ vDrawGroundTurning(rt, DW, DH, phi); return; }
   const D = -SLAB, fo = Math.sin(rt * 1.6) * 2;
-  X.fillStyle = 'rgba(255,255,255,.5)'; poly([P(-.3, VH + .45, D + 5 + fo), P(VW + .45, VH + .45, D + 5 + fo), P(VW + .45, -.3, D + 5 + fo), P(VW, 0, D), P(VW, VH, D), P(0, VH, D)]); X.fill();
-  poly([P(0, VH), P(VW, VH), P(VW, VH, D), P(0, VH, D)]); X.fillStyle = '#e6bd98'; X.fill();
-  poly([P(VW, VH), P(VW, 0), P(VW, 0, D), P(VW, VH, D)]); X.fillStyle = '#d5a885'; X.fill();
-  poly([P(0, VH, D + 9), P(VW, VH, D + 9), P(VW, VH, D), P(0, VH, D)]); X.fillStyle = 'rgba(190,140,110,.35)'; X.fill();
-  poly([P(VW, VH, D + 9), P(VW, 0, D + 9), P(VW, 0, D), P(VW, VH, D)]); X.fillStyle = 'rgba(180,130,100,.35)'; X.fill();
+  X.fillStyle = 'rgba(255,255,255,.5)'; poly([P(-.3, DH + .45, D + 5 + fo), P(DW + .45, DH + .45, D + 5 + fo), P(DW + .45, -.3, D + 5 + fo), P(DW, 0, D), P(DW, DH, D), P(0, DH, D)]); X.fill();
+  poly([P(0, DH), P(DW, DH), P(DW, DH, D), P(0, DH, D)]); X.fillStyle = '#e6bd98'; X.fill();
+  poly([P(DW, DH), P(DW, 0), P(DW, 0, D), P(DW, DH, D)]); X.fillStyle = '#d5a885'; X.fill();
+  poly([P(0, DH, D + 9), P(DW, DH, D + 9), P(DW, DH, D), P(0, DH, D)]); X.fillStyle = 'rgba(190,140,110,.35)'; X.fill();
+  poly([P(DW, DH, D + 9), P(DW, 0, D + 9), P(DW, 0, D), P(DW, DH, D)]); X.fillStyle = 'rgba(180,130,100,.35)'; X.fill();
   X.strokeStyle = 'rgba(170,120,90,.28)'; X.lineWidth = 1.6; X.beginPath();
-  for (const zz of [D * .4, D * .72]){ const nf = VW * 4, nr = VH * 4;
-    for (let q = 0; q <= nf; q++){ const pt = P(q / nf * VW, VH, zz + Math.sin(q * 1.3) * 2.2); q ? X.lineTo(pt[0], pt[1]) : X.moveTo(pt[0], pt[1]); }
-    for (let q = 0; q <= nr; q++){ const pt = P(VW, VH - q / nr * VH, zz + Math.sin(q * 1.7) * 2.2); q ? X.lineTo(pt[0], pt[1]) : X.moveTo(pt[0], pt[1]); } }
+  for (const zz of [D * .4, D * .72]){ const nf = DW * 4, nr = DH * 4;
+    for (let q = 0; q <= nf; q++){ const pt = P(q / nf * DW, DH, zz + Math.sin(q * 1.3) * 2.2); q ? X.lineTo(pt[0], pt[1]) : X.moveTo(pt[0], pt[1]); }
+    for (let q = 0; q <= nr; q++){ const pt = P(DW, DH - q / nr * DH, zz + Math.sin(q * 1.7) * 2.2); q ? X.lineTo(pt[0], pt[1]) : X.moveTo(pt[0], pt[1]); } }
   X.stroke();
   X.lineWidth = 1; X.strokeStyle = 'rgba(160,125,105,.5)';
-  for (let i = 0, n = Math.round((VW + VH) * .9); i < n; i++){ const side = i % 2, u = hash(i, 41), zz = D * .25 + hash(41, i) * D * .6; const q = side ? P(VW, VH - u * VH, zz) : P(u * VW, VH, zz);
+  for (let i = 0, n = Math.round((DW + DH) * .9); i < n; i++){ const side = i % 2, u = hash(i, 41), zz = D * .25 + hash(41, i) * D * .6; const q = side ? P(DW, DH - u * DH, zz) : P(u * DW, DH, zz);
     X.beginPath(); X.ellipse(q[0], q[1], 3 + hash(i, 43) * 2.5, 2 + hash(43, i) * 1.5, 0, 0, TAU); X.fillStyle = side ? '#cbb6a8' : '#e0cdbf'; X.fill(); X.stroke(); }
-  // 잔디
-  const top = [P(0, 0), P(VW, 0), P(VW, VH), P(0, VH)];
-  poly(top); X.fillStyle = '#c2eaa6'; X.fill();
-  X.save(); poly(top); X.clip();
-  for (const par of [0, 1]){ X.beginPath(); for (let gy = 0; gy < VH; gy++) for (let gx = 0; gx < VW; gx++) if ((gx + gy) % 2 === par){ const a = P(gx, gy), b = P(gx + 1, gy), c = P(gx + 1, gy + 1), d = P(gx, gy + 1); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.lineTo(c[0], c[1]); X.lineTo(d[0], d[1]); X.closePath(); } X.fillStyle = par ? '#c6eda9' : '#bce59f'; X.fill(); }
-  const np = Math.round(VW * VH / 5);
-  for (const lt of [1, 0]){ X.beginPath(); for (let i = lt; i < np; i += 2){ const [ex, ey] = P(hash(i, 51) * VW, hash(51, i) * VH), rx = 14 + hash(i, 53) * 20; X.moveTo(ex + rx, ey); X.ellipse(ex, ey, rx, rx * .42, 0, 0, TAU); } X.fillStyle = lt ? 'rgba(235,255,215,.3)' : 'rgba(120,180,110,.1)'; X.fill(); }
-  X.restore();
-  const nt = Math.round(VW * VH * .4);
-  for (const pass of [0, 1]){ X.beginPath(); for (let i = 0; i < nt; i++){ if ((hash(i, 63) < .72 ? 0 : 1) !== pass) continue; const [sx, sy] = P(hash(i, 61) * VW, hash(61, i) * VH);
-    X.moveTo(sx - 2.5, sy); X.lineTo(sx - 3.5, sy - 4); X.moveTo(sx, sy); X.lineTo(sx, sy - 5.5); X.moveTo(sx + 2.5, sy); X.lineTo(sx + 3.5, sy - 4); }
-    X.strokeStyle = pass ? '#dcf7c6' : '#98d282'; X.lineWidth = 1.4; X.lineCap = 'round'; X.stroke(); }
-  for (let i = 0, n = Math.round(VW * VH * .07); i < n; i++){ const [sx, sy] = P(hash(i, 71) * VW, hash(71, i) * VH); X.fillStyle = ['#ffffff', '#ffe792', '#ffc6df', '#d2c0ff'][i % 4];
-    X.beginPath(); for (let q = 0; q < 5; q++){ const a = q / 5 * TAU; X.moveTo(sx + Math.cos(a) * 1.8 + 1.3, sy - 2 + Math.sin(a) * 1.3); X.arc(sx + Math.cos(a) * 1.8, sy - 2 + Math.sin(a) * 1.3, 1.3, 0, TAU); } X.fill();
-    X.fillStyle = '#ffcf4a'; X.beginPath(); X.arc(sx, sy - 2, 1, 0, TAU); X.fill(); }
+  vDrawTop(DW, DH);
   // 절벽 위로 살짝 늘어진 풀
   X.fillStyle = '#acdf92'; X.beginPath();
-  for (let q = 0, n = VW * 4; q < n; q++){ const pt = P((q + .5) / n * VW, VH); X.moveTo(pt[0] + 4.6, pt[1] + 1.5); X.ellipse(pt[0], pt[1] + 1.5, 4.6, 3.6, .46, 0, Math.PI); }
-  for (let q = 0, n = VH * 4; q < n; q++){ const pt = P(VW, VH - (q + .5) / n * VH); X.moveTo(pt[0] + 4.6, pt[1] + 1.5); X.ellipse(pt[0], pt[1] + 1.5, 4.6, 3.6, -.46, 0, Math.PI); }
+  for (let q = 0, n = DW * 4; q < n; q++){ const pt = P((q + .5) / n * DW, DH); X.moveTo(pt[0] + 4.6, pt[1] + 1.5); X.ellipse(pt[0], pt[1] + 1.5, 4.6, 3.6, .46, 0, Math.PI); }
+  for (let q = 0, n = DH * 4; q < n; q++){ const pt = P(DW, DH - (q + .5) / n * DH); X.moveTo(pt[0] + 4.6, pt[1] + 1.5); X.ellipse(pt[0], pt[1] + 1.5, 4.6, 3.6, -.46, 0, Math.PI); }
   X.fill();
-  poly(top); ink(1.8);
-  X.beginPath(); { const a = P(0, VH), b = P(0, VH, D), c = P(VW, VH, D), d = P(VW, 0, D), e = P(VW, 0), f = P(VW, VH); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.lineTo(c[0], c[1]); X.lineTo(d[0], d[1]); X.lineTo(e[0], e[1]); X.moveTo(f[0], f[1]); X.lineTo(c[0], c[1]); } ink(1.8);
+  poly([P(0, 0), P(DW, 0), P(DW, DH), P(0, DH)]); ink(1.8);
+  X.beginPath(); { const a = P(0, DH), b = P(0, DH, D), c = P(DW, DH, D), d = P(DW, 0, D), e = P(DW, 0), f = P(DW, DH); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.lineTo(c[0], c[1]); X.lineTo(d[0], d[1]); X.lineTo(e[0], e[1]); X.moveTo(f[0], f[1]); X.lineTo(c[0], c[1]); } ink(1.8);
 }
-function vDrawItem(id, x0, y0, t, f){
-  const it = VITEMS[id];
-  if (f){ X.save(); X.scale(-1, 1); vDrawCanon(id, y0, x0, it.w, it.h, t, true); X.restore(); }
-  else vDrawCanon(id, x0, y0, it.w, it.h, t, false);
+function vDrawTop(DW, DH){
+  // 잔디
+  const top = [P(0, 0), P(DW, 0), P(DW, DH), P(0, DH)];
+  poly(top); X.fillStyle = '#c2eaa6'; X.fill();
+  X.save(); poly(top); X.clip();
+  for (const par of [0, 1]){ X.beginPath(); for (let gy = 0; gy < DH; gy++) for (let gx = 0; gx < DW; gx++) if ((gx + gy) % 2 === par){ const a = P(gx, gy), b = P(gx + 1, gy), c = P(gx + 1, gy + 1), d = P(gx, gy + 1); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.lineTo(c[0], c[1]); X.lineTo(d[0], d[1]); X.closePath(); } X.fillStyle = par ? '#c6eda9' : '#bce59f'; X.fill(); }
+  const np = Math.round(DW * DH / 5);
+  for (const lt of [1, 0]){ X.beginPath(); for (let i = lt; i < np; i += 2){ const [ex, ey] = P(hash(i, 51) * DW, hash(51, i) * DH), rx = 14 + hash(i, 53) * 20; X.moveTo(ex + rx, ey); X.ellipse(ex, ey, rx, rx * .42, 0, 0, TAU); } X.fillStyle = lt ? 'rgba(235,255,215,.3)' : 'rgba(120,180,110,.1)'; X.fill(); }
+  X.restore();
+  const nt = Math.round(DW * DH * .4);
+  for (const pass of [0, 1]){ X.beginPath(); for (let i = 0; i < nt; i++){ if ((hash(i, 63) < .72 ? 0 : 1) !== pass) continue; const [sx, sy] = P(hash(i, 61) * DW, hash(61, i) * DH);
+    X.moveTo(sx - 2.5, sy); X.lineTo(sx - 3.5, sy - 4); X.moveTo(sx, sy); X.lineTo(sx, sy - 5.5); X.moveTo(sx + 2.5, sy); X.lineTo(sx + 3.5, sy - 4); }
+    X.strokeStyle = pass ? '#dcf7c6' : '#98d282'; X.lineWidth = 1.4; X.lineCap = 'round'; X.stroke(); }
+  for (let i = 0, n = Math.round(DW * DH * .07); i < n; i++){ const [sx, sy] = P(hash(i, 71) * DW, hash(71, i) * DH); X.fillStyle = ['#ffffff', '#ffe792', '#ffc6df', '#d2c0ff'][i % 4];
+    X.beginPath(); for (let q = 0; q < 5; q++){ const a = q / 5 * TAU; X.moveTo(sx + Math.cos(a) * 1.8 + 1.3, sy - 2 + Math.sin(a) * 1.3); X.arc(sx + Math.cos(a) * 1.8, sy - 2 + Math.sin(a) * 1.3, 1.3, 0, TAU); } X.fill();
+    X.fillStyle = '#ffcf4a'; X.beginPath(); X.arc(sx, sy - 2, 1, 0, TAU); X.fill(); }
+}
+// 돌리는 중: 땅 윗면은 바닥 평면 그대로 돌리고, 흙 절벽은 돌아간 모서리에서 다시 세워요
+function vGroundM(DW, DH, phi){
+  const C = P(DW / 2, DH / 2), c = Math.cos(phi), sn = Math.sin(phi);
+  X.translate(C[0], C[1]); X.transform(c, .5 * sn, -2 * sn, c, 0, 0); X.translate(-C[0], -C[1]);
+}
+const vRotPt = (gx, gy, DW, DH, phi) => { const c = Math.cos(phi), sn = Math.sin(phi), dx = gx - DW / 2, dy = gy - DH / 2; return [DW / 2 + dx * c - dy * sn, DH / 2 + dx * sn + dy * c]; };
+function vDrawGroundTurning(rt, DW, DH, phi){
+  const D = -SLAB, cs = [[0, 0], [DW, 0], [DW, DH], [0, DH]].map(([x, y]) => vRotPt(x, y, DW, DH, phi)), nr = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  const c = Math.cos(phi), sn = Math.sin(phi);
+  for (let i = 0; i < 4; i++){
+    const [nx0, ny0] = nr[i], nx = nx0 * c - ny0 * sn, ny = nx0 * sn + ny0 * c;
+    if (nx + ny <= 0) continue;
+    const a = cs[i], b = cs[(i + 1) % 4];
+    poly([P(a[0], a[1]), P(b[0], b[1]), P(b[0], b[1], D), P(a[0], a[1], D)]); X.fillStyle = ny >= nx ? '#e6bd98' : '#d5a885'; X.fill();
+    poly([P(a[0], a[1], D + 9), P(b[0], b[1], D + 9), P(b[0], b[1], D), P(a[0], a[1], D)]); X.fillStyle = 'rgba(185,135,105,.35)'; X.fill();
+    poly([P(a[0], a[1]), P(b[0], b[1]), P(b[0], b[1], D), P(a[0], a[1], D)]); ink(1.8);
+  }
+  X.save(); vGroundM(DW, DH, phi);
+  vDrawTop(DW, DH);
+  poly([P(0, 0), P(DW, 0), P(DW, DH), P(0, DH)]); ink(1.8);
+  X.restore();
+}
+// x0·y0·f 는 세계(저장) 좌표. plain 이면 돌리지 않고 그대로 (상점 미리보기)
+function vDrawItem(id, x0, y0, t, f, plain){
+  const it = VITEMS[id], g0 = GT;
+  GT = plain ? (f ? (gx, gy) => [gy, gx] : null) : f ? (gx, gy) => vPtToView(gy, gx) : (gx, gy) => vPtToView(gx, gy);
+  try { if (f) vDrawCanon(id, y0, x0, it.w, it.h, t, true); else vDrawCanon(id, x0, y0, it.w, it.h, t, false); } finally { GT = g0; }
 }
 function vDrawCanon(id, x, y, w, d, t, mir){
   const cx = x + w / 2, cy = y + d / 2;
   switch (id){
     case 'bhouse': {
-      const [ox, oy] = P(x, y);
-      X.save(); X.translate(ox, oy); drawBHouse(V.bhPreview || (VISIT ? VISIT.H.bhStyle : meta.house && meta.house.bhStyle) || 'heart', t); X.restore();
+      const g0 = GT; GT = (lx, ly) => g0 ? g0(x + lx, y + ly) : [x + lx, y + ly];
+      try { drawBHouse(V.bhPreview || (VISIT ? VISIT.H.bhStyle : meta.house && meta.house.bhStyle) || 'heart', t); } finally { GT = g0; }
       break;
     }
     case 'mushhouse': {
@@ -3513,7 +3580,7 @@ function vDrawCanon(id, x, y, w, d, t, mir){
     }
     case 'candyhouse': {
       iShadow(x, y, w, d);
-      const bx = x + .28, by = y + .28, bw = w - .56, bd = d - .56;
+      gView(x + .28, y + .28, w - .56, d - .56, (bx, by, bw, bd, info) => {
       iBox(bx, by, bw, bd, 40, '#ffffff', 0, { r:9, right:'#f4f0ff' });
       X.save(); rpoly([P(bx, by + bd, 40), P(bx + bw, by + bd, 40), P(bx + bw, by, 40), P(bx + bw, by, 0), P(bx + bw, by + bd, 0), P(bx, by + bd, 0)], 9); X.clip();
       for (const face of ['L', 'R']) for (let k = 0; k < 6; k++){ facePath(face, bx, by, bw, bd, k * .26 + .03, 0, k * .26 + .15, 40, false); X.fillStyle = face === 'L' ? '#ffd0e2' : '#f9bfd6'; X.fill(); }
@@ -3521,8 +3588,9 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       rpoly([P(bx, by + bd, 40), P(bx + bw, by + bd, 40), P(bx + bw, by, 40), P(bx + bw, by, 0), P(bx + bw, by + bd, 0), P(bx, by + bd, 0)], 9); ink(2);
       iRoof(bx, by, bw, bd, 40, 28, PC.choco);
       for (let k = 0; k <= 7; k++){ const [ix, iy] = P(bx - .2 + k * (bw + .4) / 7, by + bd + .22, 36); iBall(ix, iy + 2, 3.6 + (k % 2) * 1.4, '#ffffff', { lw:1.2 }); }
-      iDoor('L', bx, by, bw, bd, .75, .5, 26, PC.mint);
+      if (info.L === 'front') iDoor('L', bx, by, bw, bd, .75, .5, 26, PC.mint); else if (info.R === 'front') iDoor('R', bx, by, bw, bd, .72, .5, 26, PC.mint);
       const [sx, sy] = P(bx + bw, by + bd / 2, 72); drawStar(sx - 2, sy, 8.5, '#fff0a8', 1.8);
+      });
       break;
     }
     case 'tree': {
@@ -3545,7 +3613,7 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       break;
     }
     case 'flowerbed': {
-      const bx = x + .12, by = y + .12, bw = .76, bd = .76;
+      gView(x + .12, y + .12, .76, .76, (bx, by, bw, bd) => {
       poly([P(bx + .05, by + .1), P(bx + bw + .2, by + .1), P(bx + bw + .2, by + bd + .2), P(bx + .05, by + bd + .2)]); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
       fBox(bx, by, bw, bd, 9, 0, '#f3d2b0', '#e8bf9b', '#d6a985');
       X.strokeStyle = 'rgba(180,130,95,.3)'; X.lineWidth = 1; X.beginPath(); for (let u = .25; u < bw; u += .25){ const a = P(bx + u, by + bd, 0), b = P(bx + u, by + bd, 9); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); } X.stroke();
@@ -3557,6 +3625,7 @@ function vDrawCanon(id, x, y, w, d, t, mir){
         X.strokeStyle = '#8fcd7a'; X.lineWidth = 1.4; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx + sw, sy - 7); X.stroke();
         fFlower(sx + sw, sy - 9, cols[j * 3 + i]);
       }
+      });
       break;
     }
     case 'sunflower': {
@@ -3592,13 +3661,17 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       const railX = (x0, x1) => { for (const z of [8, 16]) fBox(x0, yy - .03, x1 - x0, .06, 3.6, z, '#fcebd5', '#f2d6b5', '#e2bf9b', 1.1); };
       const railY = (y0, y1) => { for (const z of [8, 16]) fBox(px - .03, y0, .06, y1 - y0, 3.6, z, '#fcebd5', '#f2d6b5', '#e2bf9b', 1.1); };
       X.beginPath(); X.ellipse(...P(px + .05, yy + .05), 6, 3, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
-      if (nN) railY(y, yy - .07);
-      if (nW) railX(x, px - .07);
-      fBox(px - .07, yy - .07, .14, .14, 22, 0, null, '#f7dcbd', '#e8c6a2', 1.3);
-      { const a = P(px - .07, yy + .07, 22), b = P(px + .07, yy + .07, 22), c = P(px + .07, yy - .07, 22), tp = P(px, yy, 29);
-        poly([a, b, tp]); X.fillStyle = '#fbe6cd'; X.fill(); ink(1.3); poly([b, c, tp]); X.fillStyle = '#ebcaa8'; X.fill(); ink(1.3); }
-      if (nE) railX(px + .07, x + 1);
-      if (nS) railY(yy + .07, y + 1);
+      const post = () => { const [vx, vy] = GT ? GT(px, yy) : [px, yy]; noGT(() => {
+        fBox(vx - .07, vy - .07, .14, .14, 22, 0, null, '#f7dcbd', '#e8c6a2', 1.3);
+        const a = P(vx - .07, vy + .07, 22), b = P(vx + .07, vy + .07, 22), c = P(vx + .07, vy - .07, 22), tp = P(vx, vy, 29);
+        poly([a, b, tp]); X.fillStyle = '#fbe6cd'; X.fill(); ink(1.3); poly([b, c, tp]); X.fillStyle = '#ebcaa8'; X.fill(); ink(1.3); }); };
+      const depth = (gx, gy) => { const q = GT ? GT(gx, gy) : [gx, gy]; return q[0] + q[1]; };
+      const parts = [[depth(px, yy), post]];
+      if (nN) parts.push([depth(px, y + .2), () => railY(y, yy - .07)]);
+      if (nW) parts.push([depth(x + .2, yy), () => railX(x, px - .07)]);
+      if (nE) parts.push([depth(x + .8, yy), () => railX(px + .07, x + 1)]);
+      if (nS) parts.push([depth(px, y + .8), () => railY(yy + .07, y + 1)]);
+      parts.sort((p1, p2) => p1[0] - p2[0]).forEach(q => q[1]());
       break;
     }
     case 'bench': {
@@ -3630,9 +3703,10 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       iShadow(x, y, 1, 1, .5);
       iCyl(cx, cy, 3, 26, PC.wood2);
       iBox(cx - .4, cy - .02, .8, .06, 17, PC.wood, 21, { r:5 });
-      const [tx, ty] = P(cx, cy + .04, 30);
-      X.save(); X.translate(tx, ty); X.transform(1, .5, 0, 1, 0, 0); if (mir) X.scale(-1, 1);
-      X.font = '11px "Jua","Gowun Dodum",system-ui,sans-serif'; X.textAlign = 'center'; X.fillStyle = VINK; X.fillText('방울섬', 0, 4); X.restore();
+      const m = gFace('L', cx - .4, cy - .02, .8, .06, [.4]);
+      if (m) noGT(() => { const [vf, rx, ry, rw, rd, [u]] = m, [tx, ty] = vf === 'L' ? P(rx + u, ry + rd + .02, 30) : P(rx + rw + .02, ry + rd - u, 30);
+        X.save(); X.translate(tx, ty); X.transform(1, vf === 'L' ? .5 : -.5, 0, 1, 0, 0);
+        X.font = '11px "Jua","Gowun Dodum",system-ui,sans-serif'; X.textAlign = 'center'; X.fillStyle = VINK; X.fillText('방울섬', 0, 4); X.restore(); });
       break;
     }
     case 'well': {
@@ -3694,28 +3768,32 @@ const BH_STYLES = [
   { id:'gift', name:'선물상자 집', price:800 },
 ];
 function drawBHouse(style, t){
-  const bx = .18, by = .22, bw = 2.64, bd = 1.56;
+  return gView(.18, .22, 2.64, 1.56, (bx, by, bw, bd, info) => drawBHouseV(style, t, bx, by, bw, bd, info));
+}
+function drawBHouseV(style, t, bx, by, bw, bd, info){
+  const ox0 = bx - .18, oy0 = by - .22, front = info.L === 'front';
   const heart = (sx, sy, s, col) => { X.save(); X.translate(sx, sy); X.scale(s / 10, s / 10); heartPath(0, 0, 10); X.fillStyle = col; X.fill(); X.lineWidth = 2 * 10 / s; X.strokeStyle = VINK; X.stroke(); X.restore(); };
   const faceAt = (face, u, z) => face === 'L' ? P(bx + u, by + bd, z) : P(bx + bw, by + bd - u, z);
   const cloud = (sx, sy, k = 1) => { for (const [dx, dy, r] of [[-12, 2, 9], [0, -4, 11], [12, 2, 9]]) iBall(sx + dx * k, sy + dy * k, r * k, '#ffffff', { lw:1.6 }); };
-  const flowersFront = (cols, z = 0) => { for (let k = 0; k < cols.length; k++){ const [fx, fy] = P(.4 + k * .62, 2 - .05, z); iBall(fx, fy - 4, 6, PC.leaf, { lw:1.4 }); iFlower(fx, fy - 10, cols[k], 3.2); } };
+  const flowersFront = (cols, z = 0) => { for (let k = 0; k < cols.length; k++){ const [fx, fy] = P(ox0 + .4 + k * .62, oy0 + 2 - .05, z); iBall(fx, fy - 4, 6, PC.leaf, { lw:1.4 }); iFlower(fx, fy - 10, cols[k], 3.2); } };
   const bangulFace = (sx, sy, r, col = '#bfe9ff') => { iBall(sx, sy, r, col); X.fillStyle = VINK; X.beginPath(); X.arc(sx - r * .32, sy, r * .14, 0, TAU); X.arc(sx + r * .32, sy, r * .14, 0, TAU); X.fill(); X.fillStyle = '#ffb3c7'; X.beginPath(); X.arc(sx - r * .58, sy + r * .3, r * .15, 0, TAU); X.arc(sx + r * .58, sy + r * .3, r * .15, 0, TAU); X.fill(); X.beginPath(); X.arc(sx, sy + r * .2, r * .2, .2, Math.PI - .2); X.lineWidth = 1.6; X.strokeStyle = VINK; X.stroke(); };
   const sprout = (sx, sy, k = 1) => { X.strokeStyle = '#6cc07a'; X.lineWidth = 3 * k; X.lineCap = 'round'; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx, sy - 10 * k); X.stroke(); X.beginPath(); X.ellipse(sx - 8 * k, sy - 12 * k, 9 * k, 4.5 * k, -.4, 0, TAU); X.fillStyle = PC.leaf; X.fill(); ink(1.6); X.beginPath(); X.ellipse(sx + 8 * k, sy - 13 * k, 9 * k, 4.5 * k, .4, 0, TAU); X.fill(); ink(1.6); };
   const flag = (sx, sy, col) => { X.strokeStyle = VINK; X.lineWidth = 2; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx, sy - 22); X.stroke(); X.beginPath(); X.moveTo(sx, sy - 22); X.lineTo(sx + 14, sy - 17); X.lineTo(sx, sy - 12); X.closePath(); X.fillStyle = col; X.fill(); ink(1.6); };
   switch (style){
     case 'heart': {
-      const r = farmHouse(bx, by, bw, bd, { t, roof:'#ffaaa2', door:'#ffc9d6', wins:[.22, .8], doorU:.5, chimney:true, heart:true });
+      const r = farmHouseV(bx, by, bw, bd, { t, roof:'#ffaaa2', door:'#ffc9d6', wins:[.22, .8], doorU:.5, chimney:true, heart:true, canon:[.18, .22, 2.64, 1.56] }, info);
       bangulFace(r.ridge[0], r.ridge[1] - 7, 8.5);
     } break;
     case 'cake': {
-      iShadow(0, 0, 3, 2, 1.05);
+      iShadow(ox0, oy0, 3, 2, 1.05);
       iBox(bx, by, bw, bd, 24, '#fff4e6', 0, { r:10 });
       iBox(bx, by, bw, bd, 18, '#ffc8dc', 24, { r:8 });
       iBox(bx, by, bw, bd, 10, '#fffdf8', 42, { r:8 });
       for (let k = 0; k <= 8; k++){ const [dx, dy] = P(bx + k * bw / 8, by + bd + .02, 44); iBall(dx, dy + 2 + (k % 2) * 3, 4 + (k % 2) * 1.5, '#ffffff', { lw:1.3 }); }
       for (let k = 0; k <= 5; k++){ const [dx, dy] = P(bx + bw + .02, by + bd - k * bd / 5, 44); iBall(dx, dy + 2 + (k % 2) * 3, 4 + (k % 2) * 1.5, '#ffffff', { lw:1.3 }); }
-      iDoor('L', bx, by, bw, bd, 1.32, .58, 30, '#c9a189');
-      faceDot('L', bx, by, bw, bd, .5, 30, 7, '#a8dcff'); faceDot('L', bx, by, bw, bd, 2.15, 30, 7, '#a8dcff'); faceDot('R', bx, by, bw, bd, .78, 30, 6.5, '#a8dcff');
+      if (front){ iDoor('L', bx, by, bw, bd, 1.32, .58, 30, '#c9a189'); faceDot('L', bx, by, bw, bd, .5, 30, 7, '#a8dcff'); faceDot('L', bx, by, bw, bd, 2.15, 30, 7, '#a8dcff'); }
+      else { faceDot('L', bx, by, bw, bd, .75, 30, 7, '#a8dcff'); faceDot('L', bx, by, bw, bd, 1.9, 30, 7, '#a8dcff'); }
+      faceDot('R', bx, by, bw, bd, .78, 30, 6.5, '#a8dcff');
       const [tx, ty] = P(bx + bw / 2, by + bd / 2, 52);
       for (const [dx, dy, r] of [[-44, 10, 16], [44, 10, 16], [-22, -2, 18], [22, -2, 18], [0, -12, 20], [0, 14, 17]]) iBall(tx + dx, ty + dy, r, '#ffffff');
       for (const [dx, dy] of [[-26, -22], [8, -30], [34, -14]]){ iBall(tx + dx, ty + dy, 9, '#ff7f96'); X.fillStyle = '#fff3a8'; for (let k = 0; k < 4; k++){ X.beginPath(); X.arc(tx + dx - 3 + (k % 2) * 6, ty + dy - 1 + Math.floor(k / 2) * 5, 1, 0, TAU); X.fill(); } X.beginPath(); X.ellipse(tx + dx, ty + dy - 9, 6, 2.5, 0, 0, TAU); X.fillStyle = PC.leaf; X.fill(); ink(1.2); }
@@ -3723,10 +3801,10 @@ function drawBHouse(style, t){
       flowersFront(['#ffb3c7', '#fffdf8', '#ff9fae', '#fffdf8', '#ffb3c7']);
     } break;
     case 'rainbow': {
-      iShadow(0, 0, 3, 2, 1.05);
+      iShadow(ox0, oy0, 3, 2, 1.05);
       iBox(bx, by, bw, bd, 46, '#fffaf0', 0, { r:10 });
-      for (const [f, u] of [['L', .55], ['L', 2.1], ['R', .8]]){ const [sx, sy] = faceAt(f, u, 28); drawStar(sx, sy, 8, '#fff0a8', 1.6); }
-      iDoor('L', bx, by, bw, bd, 1.32, .58, 30, '#d9c8ff');
+      for (const [f, u] of front ? [['L', .55], ['L', 2.1], ['R', .8]] : [['L', .8], ['L', 1.85], ['R', .8]]){ const [sx, sy] = faceAt(f, u, 28); drawStar(sx, sy, 8, '#fff0a8', 1.6); }
+      if (front) iDoor('L', bx, by, bw, bd, 1.32, .58, 30, '#d9c8ff');
       iRoof(bx, by, bw, bd, 46, 32, '#ffd9e6');
       const ym = by + bd / 2, xm = bx + bw / 2, zr = 46 + 32 * 1.55, half = (bw - bd) / 2 * RIDGE_K, o = .22;
       const R1 = P(xm - half, ym, zr), R2 = P(xm + half, ym, zr), E2 = P(bx + bw + o, by - o, 46), E3 = P(bx + bw + o, by + bd + o, 46), E4 = P(bx - o, by + bd + o, 46);
@@ -3741,13 +3819,13 @@ function drawBHouse(style, t){
       { const [cx2, cy2] = P(bx - .2, by + bd + .4, 6); cloud(cx2, cy2, .9); const [cx3, cy3] = P(bx + bw + .3, by + .4, 6); cloud(cx3, cy3, .8); }
     } break;
     case 'gift': {
-      iShadow(0, 0, 3, 2, 1.05);
+      iShadow(ox0, oy0, 3, 2, 1.05);
       iBox(bx, by, bw, bd, 56, '#ffd0e2', 0, { r:8 });
       facePath('L', bx, by, bw, bd, 1.12, 0, 1.52, 56, false); X.fillStyle = '#fff0a8'; X.fill(); ink(1.6);
       facePath('R', bx, by, bw, bd, .6, 0, .96, 56, false); X.fillStyle = '#ffe58f'; X.fill(); ink(1.6);
       poly([P(bx + 1.12, by, 56), P(bx + 1.52, by, 56), P(bx + 1.52, by + bd, 56), P(bx + 1.12, by + bd, 56)]); X.fillStyle = '#fff6c4'; X.fill(); ink(1.4);
       poly([P(bx, by + .6, 56), P(bx + bw, by + .6, 56), P(bx + bw, by + .96, 56), P(bx, by + .96, 56)]); X.fillStyle = '#fff6c4'; X.fill(); ink(1.4);
-      iDoor('L', bx, by, bw, bd, .55, .5, 30, '#c4b5f5');
+      if (front) iDoor('L', bx, by, bw, bd, .55, .5, 30, '#c4b5f5'); else faceDot('L', bx, by, bw, bd, .55, 34, 7, '#a8dcff');
       faceDot('L', bx, by, bw, bd, 2.15, 34, 7, '#a8dcff'); faceDot('R', bx, by, bw, bd, 1.25, 34, 6.5, '#a8dcff');
       const [kx, ky] = P(bx + 1.32, by + .78, 56);
       for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(kx + s2 * 22, ky - 14, 22, 13, s2 * .5, 0, TAU); X.fillStyle = '#fff0a8'; X.fill(); ink(2.2); X.beginPath(); X.ellipse(kx + s2 * 22, ky - 14, 10, 5, s2 * .5, 0, TAU); X.fillStyle = '#ffd86b'; X.fill(); }
@@ -3763,7 +3841,7 @@ function vLayout(){
   const c = V.cv, w = c.clientWidth, h = c.clientHeight;
   const top = (document.querySelector('.vtop') || {}).offsetHeight || 0, bot = (document.querySelector('.vtray') || {}).offsetHeight || 0;
   const ah = Math.max(80, h - top - bot);
-  const cw = (VW + VH) * HW + 40, ch = (VW + VH) * HH + SLAB + 70;
+  const [DW, DH] = vVD(), cw = (DW + DH) * HW + 40, ch = (DW + DH) * HH + SLAB + 70;
   const fit = Math.min(w / cw, ah / ch), sc = Math.max(fit, .62) * V.z;
   const mx = Math.max(0, (cw * sc - w) / 2 + 40), my = Math.max(0, (ch * sc - ah) / 2 + 40);
   V.camX = Math.max(-mx, Math.min(mx, V.camX)); V.camY = Math.max(-my, Math.min(my, V.camY));
@@ -3777,50 +3855,95 @@ function drawVillage(rt){
   const prev = X; X = c.getContext('2d');
   X.setTransform(dp, 0, 0, dp, 0, 0);
   const sky = X.createLinearGradient(0, 0, 0, L.h); sky.addColorStop(0, '#c4ecfb'); sky.addColorStop(1, '#9ad6f2'); X.fillStyle = sky; X.fillRect(0, 0, L.w, L.h);
-  const ox = L.w / 2 + V.camX - (VW - VH) * HW / 2 * L.sc, oy = L.cy + V.camY - (VW + VH) * HH / 2 * L.sc;
+  const H = houseData(), placing = !!V.pick, [DW, DH] = vVD(), rot = V.rot & 1;
+  const ox = L.w / 2 + V.camX - (DW - DH) * HW / 2 * L.sc, oy = L.cy + V.camY - (DW + DH) * HH / 2 * L.sc;
   V.ox = ox; V.oy = oy; V.sc = L.sc;
   X.setTransform(dp * L.sc, 0, 0, dp * L.sc, dp * ox, dp * oy);
+  // 돌리는 중이면 각도 (끝으로 갈수록 부드럽게 멈춰요)
+  const now = performance.now() / 1000;
+  let phi = 0;
+  if (V.rotAnim){ const k = Math.min(1, (now - V.rotAnim.t0) / .45), e = 1 - Math.pow(1 - k, 3); phi = V.rotAnim.from * (1 - e); if (k >= 1){ V.rotAnim = null; phi = 0; } }
   // 물결
   X.strokeStyle = 'rgba(255,255,255,.5)'; X.lineWidth = 2;
-  for (let i = 0; i < 30; i++){ const gx = -6 + hash(i, 2) * (VW + 12), gy = -6 + hash(7, i) * (VH + 12); if (gx > -1 && gx < VW + 1 && gy > -1 && gy < VH + 1) continue; const [wx, wy] = P(gx, gy); const o = Math.sin(rt * 1.4 + i) * 4; X.beginPath(); X.moveTo(wx - 10 + o, wy); X.quadraticCurveTo(wx + o, wy - 5, wx + 10 + o, wy); X.stroke(); }
-  vDrawGround(rt);
-  const H = houseData(), placing = !!V.pick;
-  if (V.tab === 'deco' && placing){
-    X.strokeStyle = 'rgba(58,46,95,.16)'; X.lineWidth = 1; X.beginPath();
-    for (let i = 0; i <= VW; i++){ const [a1, a2] = P(i, 0), [b1, b2] = P(i, VH); X.moveTo(a1, a2); X.lineTo(b1, b2); }
-    for (let j = 0; j <= VH; j++){ const [a1, a2] = P(0, j), [b1, b2] = P(VW, j); X.moveTo(a1, a2); X.lineTo(b1, b2); }
-    X.stroke();
-  }
-  const now = performance.now() / 1000, vdt = Math.min(.05, now - (V.lastT || now)); V.lastT = now;
+  for (let i = 0; i < 30; i++){ const gx = -6 + hash(i, 2) * (DW + 12), gy = -6 + hash(7, i) * (DH + 12); if (gx > -1 && gx < DW + 1 && gy > -1 && gy < DH + 1) continue; const [wx, wy] = P(gx, gy); const o = Math.sin(rt * 1.4 + i) * 4; X.beginPath(); X.moveTo(wx - 10 + o, wy); X.quadraticCurveTo(wx + o, wy - 5, wx + 10 + o, wy); X.stroke(); }
+  vDrawGround(rt, DW, DH, phi);
+  const vdt = Math.min(.05, now - (V.lastT || now)); V.lastT = now;
   if (!V.npcs) vNpcsSync();
   vNpcUpdate(vdt);
-  const draw = o => o.ch ? vDrawNpc(o, rt) : vDrawItem(o.id, o.x, o.y, rt, o.f);
+  // 보이는 방향으로 바꾼 가구 목록
+  const VP = H.placed.map(vObjToView), selV = V.sel ? VP.find(v => v.src === V.sel) : null;
+  const gv = placing && V.ghost ? (() => { const [w, h] = vDims(V.pick, V.flip), [x, y] = vRectToView(V.ghost.x, V.ghost.y, w, h); return { x, y, f:(V.flip ? 1 : 0) ^ rot }; })() : null;
   V.pathSet = new Set(H.placed.filter(o => o.id === 'path').map(o => o.x + ',' + o.y));
   V.fenceSet = new Set(H.placed.filter(o => o.id === 'fence').map(o => o.x + ',' + o.y));
   if (V.pick === 'fence' && V.ghost) V.fenceSet.add(V.ghost.x + ',' + V.ghost.y);
-  for (const o of H.placed) if (VITEMS[o.id].cat === 'floor') draw(o);
-  if (V.sel && !placing){
-    const q = vFoot(V.sel), pul = .5 + Math.sin(rt * 5) * .25;
+  // 바닥에 붙은 것들(격자 · 길 · 선택 표시)은 땅과 함께 돌아요
+  X.save(); if (phi) vGroundM(DW, DH, phi);
+  if (V.tab === 'deco' && placing && !VISIT){
+    X.strokeStyle = 'rgba(58,46,95,.16)'; X.lineWidth = 1; X.beginPath();
+    for (let i = 0; i <= DW; i++){ const [a1, a2] = P(i, 0), [b1, b2] = P(i, DH); X.moveTo(a1, a2); X.lineTo(b1, b2); }
+    for (let j = 0; j <= DH; j++){ const [a1, a2] = P(0, j), [b1, b2] = P(DW, j); X.moveTo(a1, a2); X.lineTo(b1, b2); }
+    X.stroke();
+  }
+  for (const o of VP) if (VITEMS[o.id].cat === 'floor') vDrawItem(o.id, o.src.x, o.src.y, rt, o.src.f);
+  if (selV && !placing){
+    const q = vFoot(selV), pul = .5 + Math.sin(rt * 5) * .25;
     poly([P(q.x0, q.y0), P(q.x1 + 1, q.y0), P(q.x1 + 1, q.y1 + 1), P(q.x0, q.y1 + 1)]); X.fillStyle = `rgba(255,111,159,${pul * .5})`; X.fill(); X.lineWidth = 3; X.strokeStyle = '#ff6f9f'; X.stroke();
   }
-  let ghostDrawn = false;
-  const gv = placing && V.ghost ? { x:V.ghost.x, y:V.ghost.y, f:V.flip } : null;
-  const gq = gv ? (() => { const [w, h] = vDims(V.pick, gv.f); return { x0:gv.x, y0:gv.y, x1:gv.x + w - 1, y1:gv.y + h - 1 }; })() : null;
-  if (gq){ const ok = vCanPlace(V.pick, gv.x, gv.y, null, gv.f); poly([P(gq.x0, gq.y0), P(gq.x1 + 1, gq.y0), P(gq.x1 + 1, gq.y1 + 1), P(gq.x0, gq.y1 + 1)]); X.fillStyle = ok ? 'rgba(126,232,192,.55)' : 'rgba(255,111,127,.55)'; X.fill(); X.lineWidth = 2.4; X.strokeStyle = ok ? '#2f8f72' : '#d0505f'; X.stroke(); }
-  const objs = H.placed.filter(o => VITEMS[o.id].cat !== 'floor').map(o => { const q = vFoot(o); return [q.x1 + q.y1 + (q.x0 + q.y0) * .01, o]; });
-  for (const n of V.npcs || []) objs.push([n.x + n.y + .5, n]);
-  objs.sort((a, b) => a[0] - b[0]);
-  const gk = gq ? gq.x1 + gq.y1 + (gq.x0 + gq.y0) * .01 + .001 : 1e9;
-  for (const [k, o] of objs){
-    if (!ghostDrawn && gq && VITEMS[V.pick].cat !== 'floor' && gk < k){ X.globalAlpha = .7; vDrawItem(V.pick, gv.x, gv.y, rt, gv.f); X.globalAlpha = 1; ghostDrawn = true; }
-    draw(o);
+  const gq = gv ? vFoot({ id:V.pick, x:gv.x, y:gv.y, f:gv.f }) : null;
+  if (gq){ const ok = vCanPlace(V.pick, V.ghost.x, V.ghost.y, null, V.flip); poly([P(gq.x0, gq.y0), P(gq.x1 + 1, gq.y0), P(gq.x1 + 1, gq.y1 + 1), P(gq.x0, gq.y1 + 1)]); X.fillStyle = ok ? 'rgba(126,232,192,.55)' : 'rgba(255,111,127,.55)'; X.fill(); X.lineWidth = 2.4; X.strokeStyle = ok ? '#2f8f72' : '#d0505f'; X.stroke(); }
+  X.restore();
+  // 주민: 보이는 자리와 바라보는 방향
+  const rr4 = V.rot & 3;
+  for (const n of V.npcs || []){
+    const [vx, vy] = vPtToView(n.x + .5, n.y + .5); n.vx = vx - .5; n.vy = vy - .5;
+    if (!rr4 || (n.fx === 0 && n.fy === .5)){ n.vfx = n.fx; n.vfy = n.fy; continue; }
+    const dx = (n.fx + 2 * n.fy) / 2, dy = (2 * n.fy - n.fx) / 2, [ex, ey] = rr4 === 1 ? [-dy, dx] : rr4 === 2 ? [-dx, -dy] : [dy, -dx];
+    const sx = ex - ey, sy = (ex + ey) * .5, m = Math.hypot(sx, sy) || 1, k = Math.hypot(n.fx, n.fy);
+    n.vfx = sx / m * k; n.vfy = sy / m * k;
   }
-  if (gq && !ghostDrawn){ X.globalAlpha = .7; vDrawItem(V.pick, gv.x, gv.y, rt, gv.f); X.globalAlpha = 1; }
-  if (V.sel && !placing){
-    const q = vFoot(V.sel), [ax, ay] = P((q.x0 + q.x1 + 1) / 2, (q.y0 + q.y1 + 1) / 2, vHeight(V.sel.id) + 14 + Math.abs(Math.sin(rt * 4)) * 6);
+  // 돌리는 중엔 물건들이 땅과 함께 빙 돌아가요 (모양은 똑바로 선 채로)
+  const spin = (gx, gy) => { if (!phi) return [gx, gy, 0, 0]; const [rx, ry] = vRotPt(gx, gy, DW, DH, phi), a = P(gx, gy), b2 = P(rx, ry); return [rx, ry, b2[0] - a[0], b2[1] - a[1]]; };
+  const objs = [];
+  for (const o of VP) if (VITEMS[o.id].cat !== 'floor'){ const q = vFoot(o), [rx, ry, dx, dy] = spin((q.x0 + q.x1 + 1) / 2, (q.y0 + q.y1 + 1) / 2); objs.push([phi ? rx + ry : q.x1 + q.y1 + (q.x0 + q.y0) * .01, o, dx, dy]); }
+  for (const n of V.npcs || []){ const [rx, ry, dx, dy] = spin(n.vx + .5, n.vy + .5); objs.push([phi ? rx + ry : n.vx + n.vy + .5, n, dx, dy]); }
+  objs.sort((a2, b2) => a2[0] - b2[0]);
+  const gk = gq ? gq.x1 + gq.y1 + (gq.x0 + gq.y0) * .01 + .001 : 1e9;
+  let ghostDrawn = false;
+  const ghost = () => { X.globalAlpha = .7; vDrawItem(V.pick, V.ghost.x, V.ghost.y, rt, V.flip); X.globalAlpha = 1; ghostDrawn = true; };
+  for (const [k, o, dx, dy] of objs){
+    if (!ghostDrawn && gq && VITEMS[V.pick].cat !== 'floor' && gk < k) ghost();
+    if (dx || dy){ X.save(); X.translate(dx, dy); }
+    if (o.ch) vDrawNpc(o, rt); else vDrawItem(o.id, o.src.x, o.src.y, rt, o.src.f);
+    if (dx || dy) X.restore();
+  }
+  if (gq && !ghostDrawn && VITEMS[V.pick].cat !== 'floor') ghost();
+  if (selV && !placing && !phi){
+    const q = vFoot(selV), [ax, ay] = P((q.x0 + q.x1 + 1) / 2, (q.y0 + q.y1 + 1) / 2, vHeight(selV.id) + 14 + Math.abs(Math.sin(rt * 4)) * 6);
     X.beginPath(); X.moveTo(ax - 8, ay - 10); X.lineTo(ax + 8, ay - 10); X.lineTo(ax, ay); X.closePath(); X.fillStyle = '#ff6f9f'; X.fill(); ink(2);
   }
   X = prev;
+}
+// 마을 돌리기: 보는 방향 V.rot (0~3, 90도씩). 저장된 배치(세계 좌표)는 그대로 두고 그릴 때만 바꿔요
+const vVD = () => (V.rot & 1) ? [VH, VW] : [VW, VH];
+function vRectToView(x, y, w, h){ const r = V.rot & 3; return r === 0 ? [x, y, w, h] : r === 1 ? [VH - (y + h), x, h, w] : r === 2 ? [VW - (x + w), VH - (y + h), w, h] : [y, VW - (x + w), h, w]; }
+function vRectToWorld(x, y, w, h){ const r = V.rot & 3; return r === 0 ? [x, y, w, h] : r === 1 ? [y, VH - (x + w), h, w] : r === 2 ? [VW - (x + w), VH - (y + h), w, h] : [VW - (y + h), x, h, w]; }
+function vPtToView(x, y){ const r = V.rot & 3; return r === 0 ? [x, y] : r === 1 ? [VH - y, x] : r === 2 ? [VW - x, VH - y] : [y, VW - x]; }
+function vPtToWorld(x, y){ const r = V.rot & 3; return r === 0 ? [x, y] : r === 1 ? [y, VH - x] : r === 2 ? [VW - x, VH - y] : [VW - y, x]; }
+function vObjToView(o){ const [w, h] = vDims(o.id, o.f), [x, y] = vRectToView(o.x, o.y, w, h); return { id:o.id, x, y, f:(o.f ? 1 : 0) ^ (V.rot & 1), src:o }; }
+const vCellWorld = (px, py) => { const [vx, vy] = vScreenToTile(px, py), [wx, wy] = vRectToWorld(vx, vy, 1, 1); return [wx, wy]; };
+// 놓을 자리: 손가락 아래 칸이 가구 가운데가 되게 (보이는 방향 기준으로 계산해서 세계 좌표로)
+function vGhostAt(px, py){
+  const [vx, vy] = vScreenToTile(px, py), vf = (V.flip ? 1 : 0) ^ (V.rot & 1), [gw, gh] = vDims(V.pick, vf);
+  const [wx, wy] = vRectToWorld(vx - Math.floor((gw - 1) / 2), vy - Math.floor((gh - 1) / 2), gw, gh);
+  return { x:wx, y:wy };
+}
+function vRotate(dir){
+  const was = V.rot || 0; V.rot = (was + dir + 4) % 4;
+  V.rotAnim = { t0:performance.now() / 1000, from:-dir * Math.PI / 2 };
+  // 보고 있던 곳이 화면 가운데 그대로 남도록 카메라도 같이 돌려요
+  const cx = V.camX, cy = V.camY;
+  if (dir > 0){ V.camX = -2 * cy; V.camY = .5 * cx; } else { V.camX = 2 * cy; V.camY = -.5 * cx; }
+  sfx('buy');
 }
 function vScreenToTileF(px, py){ const lx = (px - V.ox) / V.sc, ly = (py - V.oy) / V.sc; return [(lx / HW + ly / HH) / 2, (ly / HH - lx / HW) / 2]; }
 function vScreenToTile(px, py){
@@ -3838,7 +3961,7 @@ function vPreview(cv2, id){
   X.setTransform(sc, 0, 0, sc, cv2.width / 2 - cx * sc, cv2.height / 2 + (vHeight(id) / 2 - cy) * sc);
   const tile = poly.bind(null, [P(0, 0), P(it.w, 0), P(it.w, it.h), P(0, it.h)]);
   if (it.cat !== 'floor'){ rpoly([P(0, 0), P(it.w, 0), P(it.w, it.h), P(0, it.h)], 8); X.fillStyle = '#c2eaa6'; X.fill(); }
-  const ps = V.pathSet, fs = V.fenceSet; V.pathSet = V.fenceSet = null; vDrawItem(id, 0, 0, 1.2, 0); V.pathSet = ps; V.fenceSet = fs;
+  const ps = V.pathSet, fs = V.fenceSet; V.pathSet = V.fenceSet = null; vDrawItem(id, 0, 0, 1.2, 0, true); V.pathSet = ps; V.fenceSet = fs;
   X = prev;
 }
 
@@ -3933,10 +4056,10 @@ function vNpcUpdate(dt){
   }
 }
 function vDrawNpc(n, rt){
-  const [sx, sy] = P(n.x + .5, n.y + .5);
+  const [sx, sy] = P((n.vx ?? n.x) + .5, (n.vy ?? n.y) + .5);
   X.fillStyle = 'rgba(93,79,134,.2)'; X.beginPath(); X.ellipse(sx, sy, 10, 4.5, 0, 0, TAU); X.fill();
   X.save(); X.translate(sx, sy - n.z - (n.sit ? -2 : 0)); X.scale(.95, .95);
-  drawDressedChar(0, 0, n.fx, n.fy, n.walk, n.st === 'walk', rt + n.x, n.ch, VISIT ? VISIT.eq[n.ch.id] || { aurora:null, wings:null, face:null } : undefined);
+  drawDressedChar(0, 0, n.vfx ?? n.fx, n.vfy ?? n.fy, n.walk, n.st === 'walk', rt + n.x, n.ch, VISIT ? VISIT.eq[n.ch.id] || { aurora:null, wings:null, face:null } : undefined);
   X.restore();
   if (n.bub){
     const b = n.bub, by = sy - n.z - 44;
@@ -3956,7 +4079,7 @@ function vNpcAt(px, py){
   if (!V.npcs) return null;
   const lx = (px - V.ox) / V.sc, ly = (py - V.oy) / V.sc;
   let best = null, bd = 20;
-  for (const n of V.npcs){ const [sx, sy] = P(n.x + .5, n.y + .5); const d = Math.hypot(lx - sx, ly - (sy - 14 - n.z)); if (d < bd){ bd = d; best = n; } }
+  for (const n of V.npcs){ const [sx, sy] = P((n.vx ?? n.x) + .5, (n.vy ?? n.y) + .5); const d = Math.hypot(lx - sx, ly - (sy - 14 - n.z)); if (d < bd){ bd = d; best = n; } }
   return best;
 }
 // 캐릭터 치장 고르기 창 (가진 치장템만 보여요)
@@ -4000,7 +4123,7 @@ function renderVillage(){
     ${VISIT ? `<span class="vsize">놀러온 마을이에요 · 주민을 눌러 인사해 보세요</span>` : ''}
     ${V.tab === 'deco' && !VISIT ? `<span class="vsize">${(() => { const lv = vGrowLv(), nx = VGROW[lv + 1]; return `섬 ${VW}×${VH}칸${nx ? ` · 다음 ×${nx.k}: ${nx.need}` : ' · 최대 크기!'}`; })()}</span>` : ''}
     ${V.tab === 'deco' || VISIT ? `
-    <div class="vzoom"><button id="vZin" aria-label="크게 보기">＋</button><button id="vZout" aria-label="작게 보기">－</button></div>
+    <div class="vzoom"><button id="vZin" aria-label="크게 보기">＋</button><button id="vZout" aria-label="작게 보기">－</button><button id="vRotL" class="vrot" aria-label="왼쪽으로 돌리기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 8.5A6.5 6.5 0 1 1 6 14"/><path d="M3.5 5.5l4.2 3.3-4.6 2.6z" class="f"/></svg></button><button id="vRotR" class="vrot" aria-label="오른쪽으로 돌리기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 8.5A6.5 6.5 0 1 0 18 14"/><path d="M20.5 5.5l-4.2 3.3 4.6 2.6z" class="f"/></svg></button></div>
 ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length ? owned.map(id => `<button class="vinv${V.pick === id ? ' on' : ''}" data-id="${id}" aria-label="${VITEMS[id].name} ${H.inv[id]}개"><canvas width="96" height="96" data-vp="${id}" aria-hidden="true"></canvas><i>${H.inv[id]}</i></button>`).join('') : '<span class="vempty">창고가 비었어요. [상점]에서 가구를 사 보세요!</span>'}</div>`}` : `
     <div class="vshop">
       <p class="sethead" style="margin:0">방울의 집 업그레이드</p>
@@ -4077,6 +4200,8 @@ ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length
   } else if (V.tab === 'deco' || VISIT){
     $('vZin').addEventListener('click', () => { V.z = Math.min(5, V.z * 1.25); });
     $('vZout').addEventListener('click', () => { V.z = Math.max(.4, V.z / 1.25); if (V.z <= .81){ V.camX = V.camY = 0; } });
+    $('vRotL').addEventListener('click', () => { if (!V.rotAnim) vRotate(-1); });
+    $('vRotR').addEventListener('click', () => { if (!V.rotAnim) vRotate(1); });
     screenEl.querySelectorAll('.vinv').forEach(b => b.addEventListener('click', () => { const id = b.dataset.id; V.sel = null; V.pick = V.pick === id ? null : id; V.flip = 0; V.moveFrom = null; V.ghost = null; sfx('buy'); renderVillage(); }));
     if (V.sel){
       $('vMove').addEventListener('click', () => { const o = V.sel; H.placed.splice(H.placed.indexOf(o), 1); H.inv[o.id] = (H.inv[o.id] || 0) + 1; V.moveFrom = o; V.pick = o.id; V.flip = o.f; V.ghost = { x:o.x, y:o.y }; V.sel = null; renderVillage(); });
@@ -4099,22 +4224,29 @@ ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length
       const k = nz / base.z, sc1 = base.sc * k;
       const ox1 = mx - (base.mx - base.ox) * k, oy1 = my - (base.my - base.oy) * k;
       V.z = nz;
-      V.camX = base.camX + (ox1 - base.ox) + (VW - VH) * HW / 2 * (sc1 - base.sc);
-      V.camY = base.camY + (oy1 - base.oy) + (VW + VH) * HH / 2 * (sc1 - base.sc);
+      const [DW, DH] = vVD();
+      V.camX = base.camX + (ox1 - base.ox) + (DW - DH) * HW / 2 * (sc1 - base.sc);
+      V.camY = base.camY + (oy1 - base.oy) + (DW + DH) * HH / 2 * (sc1 - base.sc);
     };
-    const pinchInfo = () => { const [a, b] = [...V.ptrs.values()], r = c.getBoundingClientRect(); return { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, mx:(a.x + b.x) / 2 - r.left, my:(a.y + b.y) / 2 - r.top }; };
+    const pinchInfo = () => { const [a, b] = [...V.ptrs.values()], r = c.getBoundingClientRect(); return { d:Math.hypot(a.x - b.x, a.y - b.y) || 1, mx:(a.x + b.x) / 2 - r.left, my:(a.y + b.y) / 2 - r.top, ang:Math.atan2(b.y - a.y, b.x - a.x) }; };
     c.addEventListener('wheel', e => {
       e.preventDefault(); const r = c.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
       zoomAt(mx, my, V.z * Math.exp(-e.deltaY * .0015), { z:V.z, sc:V.sc, ox:V.ox, oy:V.oy, camX:V.camX, camY:V.camY, mx, my });
     }, { passive:false });
     c.addEventListener('pointerdown', e => {
       V.ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
-      if (V.ptrs.size === 2){ const q = pinchInfo(); V.pinch = { d0:q.d, z:V.z, sc:V.sc, ox:V.ox, oy:V.oy, camX:V.camX, camY:V.camY, mx:q.mx, my:q.my }; V.drag = null; try { c.setPointerCapture(e.pointerId); } catch(err){} return; }
+      if (V.ptrs.size === 2){ const q = pinchInfo(); V.pinch = { d0:q.d, z:V.z, sc:V.sc, ox:V.ox, oy:V.oy, camX:V.camX, camY:V.camY, mx:q.mx, my:q.my, a0:q.ang }; V.drag = null; try { c.setPointerCapture(e.pointerId); } catch(err){} return; }
       if (V.ptrs.size > 2) return;
     }, true);
     c.addEventListener('pointermove', e => {
       if (V.ptrs.has(e.pointerId)) V.ptrs.set(e.pointerId, { x:e.clientX, y:e.clientY });
-      if (V.pinch && V.ptrs.size >= 2){ e.stopImmediatePropagation(); const q = pinchInfo(); zoomAt(q.mx, q.my, V.pinch.z * q.d / V.pinch.d0, V.pinch); }
+      if (V.pinch && V.ptrs.size >= 2){
+        e.stopImmediatePropagation(); const q = pinchInfo();
+        // 두 손가락을 돌리면 마을도 90도씩 돌아가요
+        let da = q.ang - V.pinch.a0; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+        if (Math.abs(da) > .55 && !V.rotAnim){ vRotate(da > 0 ? 1 : -1); V.pinch.a0 = q.ang; V.pinch.twist = true; }
+        if (!V.pinch.twist) zoomAt(q.mx, q.my, V.pinch.z * q.d / V.pinch.d0, V.pinch);
+      }
     }, true);
     const ptrUp = e => {
       V.ptrs.delete(e.pointerId);
@@ -4122,16 +4254,16 @@ ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length
       if (V.afterPinch){ if (!V.ptrs.size) V.afterPinch = false; V.drag = null; e.stopImmediatePropagation(); }
     };
     c.addEventListener('pointerup', ptrUp, true); c.addEventListener('pointercancel', ptrUp, true);
-    c.addEventListener('pointerdown', e => { if (V.pinch || V.afterPinch || V.ptrs.size > 1) return; ensureAudio(); V.drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:V.camX, cy:V.camY, moved:false }; if (!V.pick){ const rb = c.getBoundingClientRect(); V.drag.npc = vNpcAt(e.clientX - rb.left, e.clientY - rb.top); } try { c.setPointerCapture(e.pointerId); } catch(err){} if (V.pick){ const r = c.getBoundingClientRect(), [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } } });
+    c.addEventListener('pointerdown', e => { if (V.pinch || V.afterPinch || V.ptrs.size > 1) return; ensureAudio(); V.drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:V.camX, cy:V.camY, moved:false }; if (!V.pick){ const rb = c.getBoundingClientRect(); V.drag.npc = vNpcAt(e.clientX - rb.left, e.clientY - rb.top); } try { c.setPointerCapture(e.pointerId); } catch(err){} if (V.pick){ const r = c.getBoundingClientRect(); V.ghost = vGhostAt(e.clientX - r.left, e.clientY - r.top); } });
     c.addEventListener('pointermove', e => {
       const r = c.getBoundingClientRect();
-      if (V.pick && (!V.drag || e.pointerType === 'mouse')){ const [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } }
+      if (V.pick && (!V.drag || e.pointerType === 'mouse')) V.ghost = vGhostAt(e.clientX - r.left, e.clientY - r.top);
       if (!V.drag || e.pointerId !== V.drag.id) return;
       const dx = e.clientX - V.drag.sx, dy = e.clientY - V.drag.sy;
       if (Math.hypot(dx, dy) > 8) V.drag.moved = true;
       if (V.drag.moved){
-        if (V.pick){ const [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top); { const [gw, gh] = vDims(V.pick, V.flip); V.ghost = { x:tx - Math.floor((gw - 1) / 2), y:ty - Math.floor((gh - 1) / 2) }; } }
-        else if (V.drag.npc){ const n = V.drag.npc, [fx, fy] = vScreenToTileF(e.clientX - r.left, e.clientY - r.top + 14 * V.sc); n.st = 'held'; n.x = Math.max(-.4, Math.min(VW - .6, fx - .5)); n.y = Math.max(-.4, Math.min(VH - .6, fy - .5)); n.z = 10; n.walk += .03; if (!n.bub || n.bub.text !== '!') vBubble(n, '!', 'talk', 99); }
+        if (V.pick) V.ghost = vGhostAt(e.clientX - r.left, e.clientY - r.top);
+        else if (V.drag.npc){ const n = V.drag.npc, [fx, fy] = vPtToWorld(...vScreenToTileF(e.clientX - r.left, e.clientY - r.top + 14 * V.sc)); n.st = 'held'; n.x = Math.max(-.4, Math.min(VW - .6, fx - .5)); n.y = Math.max(-.4, Math.min(VH - .6, fy - .5)); n.z = 10; n.walk += .03; if (!n.bub || n.bub.text !== '!') vBubble(n, '!', 'talk', 99); }
         else { V.camX = V.drag.cx + dx; V.camY = V.drag.cy + dy; }
       }
     });
@@ -4145,9 +4277,9 @@ ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length
         vBubble(dnpc, ['여기 좋다!', '와, 날았다~', '이사 왔어요!'][Math.floor(Math.random() * 3)], 'heart', 2); sfx('gem');
         return;
       }
-      const r = c.getBoundingClientRect(), [tx, ty] = vScreenToTile(e.clientX - r.left, e.clientY - r.top);
+      const r = c.getBoundingClientRect(), [tx, ty] = vCellWorld(e.clientX - r.left, e.clientY - r.top);
       if (V.pick){
-        const id = V.pick, [gw, gh] = vDims(id, V.flip), gx = tx - Math.floor((gw - 1) / 2), gy = ty - Math.floor((gh - 1) / 2);
+        const id = V.pick, gh0 = vGhostAt(e.clientX - r.left, e.clientY - r.top), gx = gh0.x, gy = gh0.y;
         V.ghost = { x:gx, y:gy };
         if (!vCanPlace(id, gx, gy, null, V.flip)){ if (!moved) { vToast('여기에는 놓을 수 없어요'); sfx('hurt'); } return; }
         H.placed.push({ id, x:gx, y:gy, f:V.flip || 0 }); H.inv[id]--; if (!H.inv[id]) delete H.inv[id];
