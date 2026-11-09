@@ -240,6 +240,8 @@ body.touch .card .key{display:none}
 .netme{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center}
 .netme span{font-size:15px}
 .altf{font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif!important;font-weight:700!important}
+.vth{display:block;width:max-content;margin:0 auto 3px;font-size:11.5px;line-height:1.5;padding:0 8px;border-radius:999px;color:#fff}
+.vth-heart{background:#ff9fb4}.vth-cake{background:#f4a3c4}.vth-rainbow{background:#a99be6}.vth-gift{background:#5fcfa8}
 .netname{font-family:var(--font-display);font-weight:400;font-size:20px;color:#7c6cb0}
 .nethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .nethd .vbuy{font-size:14px;padding:3px 12px}
@@ -522,7 +524,7 @@ const WPN = {
   beam:   { name:'햇살 돋보기', noEvo:true, cd:[2.2,2.2,2.2,1.8,1.8], dmg:[18,22.5,22.5,22.5,22.5], len:[180,180,180,260,260], n:[1,1,2,2,2], wid:[6,6,6,6,11],
             special:'햇살이 굵어지고, 맞은 적이 1초 동안 불타요',
             desc:['적이 가장 많은 쪽으로 햇살을 쏴서 일직선의 적을 모두 맞혀요','햇살 공격력 +25%','햇살 2줄기 (반대쪽으로 하나 더)','햇살이 더 길어지고 더 자주 쏴요','햇살이 굵어지고, 맞은 적이 1초 동안 불타요'] },
-  ladybug:{ name:'무당벌레 친구', noEvo:true, cd:[.5,.5,.5,.5,.4], n:[1,2,2,3,3], dmg:[10.5,10.5,15,15,19.5], bossDmg:[30,30,43,43,56],
+  ladybug:{ name:'무당벌레 친구', noEvo:true, cd:[.5,.5,.5,.5,.4], n:[1,2,2,3,3], dmg:[10.5,10.5,15,15,19.5], bossDmg:[30,30,43,48,56],
             special:'공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요',
             desc:['꼬마 무당벌레가 멀리 날아가 적을 콕 쏘고 돌아와요 (보스를 먼저 노리고, 보스에겐 30)','무당벌레 2마리','쏘는 공격력 +43%','무당벌레 3마리','공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요'] },
   mine:   { name:'솜사탕 지뢰', noEvo:true, cd:[1.4,1.4,1.4,1.0,1.0], dmg:[24,24,31.2,31.2,40], rad:[40,50,50,50,50], max:[4,4,6,6,6],
@@ -2970,7 +2972,8 @@ const VGROW = [
 ];
 const vGrowLv = () => { let lv = 0; VGROW.forEach((g, i) => { if (g.ok()) lv = i; }); return lv; };
 const vSizeOf = lv => [Math.round(16 * VGROW[lv].k), Math.round(12 * VGROW[lv].k)];
-const VCATS = [['all', '전체'], ['house', '집'], ['nature', '자연'], ['deco', '장식'], ['floor', '길']];
+const VCATS = [['all', '전체'], ['house', '집'], ['nature', '자연'], ['deco', '장식'], ['floor', '길'], ['heart', '하트 오두막'], ['cake', '딸기 케이크'], ['rainbow', '무지개 별'], ['gift', '선물상자']];
+const VTHEME = { heart:'하트 오두막', cake:'딸기 케이크', rainbow:'무지개 별', gift:'선물상자' };
 const VITEMS = {
   bhouse:    { name:'방울의 집',   cat:'house',  w:3, h:2, price:0 },
   mushhouse: { name:'버섯 집',     cat:'house',  w:2, h:2, price:600 },
@@ -2992,6 +2995,64 @@ const VITEMS = {
   well:      { name:'우물',        cat:'deco',   w:1, h:1, price:200 },
   swing:     { name:'그네',        cat:'deco',   w:2, h:1, price:250 },
   fountain:  { name:'분수',        cat:'deco',   w:2, h:2, price:500 },
+  // 방울의 집 테마 가구
+  hay:       { name:'건초 더미',   cat:'nature', w:1, h:1, price:60,  th:'heart' },
+  garden:    { name:'당근 텃밭',   cat:'deco',   w:2, h:1, price:150, th:'heart' },
+  heartarch: { name:'하트 장미 아치', cat:'deco', w:2, h:1, price:250, th:'heart' },
+  heartpath: { name:'하트 꽃길',   cat:'floor',  w:1, h:1, price:15,  th:'heart' },
+  cupcake:   { name:'컵케이크',    cat:'deco',   w:1, h:1, price:120, th:'cake' },
+  lollipop:  { name:'막대사탕 나무', cat:'nature', w:1, h:1, price:90, th:'cake' },
+  macaron:   { name:'마카롱 테이블', cat:'deco',  w:1, h:1, price:180, th:'cake' },
+  creamfloor:{ name:'생크림 바닥', cat:'floor',  w:1, h:1, price:15,  th:'cake' },
+  starlamp:  { name:'별 가로등',   cat:'deco',   w:1, h:1, price:130, th:'rainbow' },
+  cloudbench:{ name:'구름 벤치',   cat:'deco',   w:2, h:1, price:200, th:'rainbow' },
+  rainarch:  { name:'무지개 아치', cat:'deco',   w:2, h:1, price:300, th:'rainbow' },
+  crystal:   { name:'반짝 수정',   cat:'nature', w:1, h:1, price:100, th:'rainbow' },
+  starfloor: { name:'별빛 바닥',   cat:'floor',  w:1, h:1, price:15,  th:'rainbow' },
+  giftpile:  { name:'선물 더미',   cat:'deco',   w:1, h:1, price:110, th:'gift' },
+  teddy:     { name:'곰인형',      cat:'deco',   w:1, h:1, price:160, th:'gift' },
+  balloons:  { name:'풍선 묶음',   cat:'deco',   w:1, h:1, price:90,  th:'gift' },
+  giftfloor: { name:'포장지 바닥', cat:'floor',  w:1, h:1, price:15,  th:'gift' },
+  scarecrow: { name:'허수아비',    cat:'deco',   w:1, h:1, price:120, th:'heart' },
+  woodcart:  { name:'나무 수레',   cat:'deco',   w:2, h:1, price:220, th:'heart' },
+  windmill:  { name:'꼬마 풍차',   cat:'deco',   w:1, h:1, price:280, th:'heart' },
+  pumpkin:   { name:'호박',        cat:'nature', w:1, h:1, price:70,  th:'heart' },
+  henhouse:  { name:'병아리 집',   cat:'deco',   w:1, h:1, price:200, th:'heart' },
+  milkcan:   { name:'우유통',      cat:'deco',   w:1, h:1, price:80,  th:'heart' },
+  applebasket:{ name:'사과 바구니', cat:'deco',  w:1, h:1, price:90,  th:'heart' },
+  beehive:   { name:'꿀벌통',      cat:'deco',   w:1, h:1, price:150, th:'heart' },
+  woodpile:  { name:'장작더미',    cat:'deco',   w:1, h:1, price:60,  th:'heart' },
+  rosebush:  { name:'장미 덤불',   cat:'nature', w:1, h:1, price:70,  th:'heart' },
+  donut:     { name:'도넛 방석',   cat:'deco',   w:1, h:1, price:110, th:'cake' },
+  icecream:  { name:'아이스크림',  cat:'deco',   w:1, h:1, price:130, th:'cake' },
+  cakestand: { name:'케이크 스탠드', cat:'deco', w:1, h:1, price:200, th:'cake' },
+  strawberry:{ name:'왕딸기',      cat:'nature', w:1, h:1, price:90,  th:'cake' },
+  candycane: { name:'지팡이 사탕', cat:'deco',   w:1, h:1, price:80,  th:'cake' },
+  pudding:   { name:'말랑 푸딩',   cat:'deco',   w:1, h:1, price:120, th:'cake' },
+  teacup:    { name:'찻잔 의자',   cat:'deco',   w:1, h:1, price:160, th:'cake' },
+  jellytree: { name:'젤리 나무',   cat:'nature', w:1, h:1, price:140, th:'cake' },
+  chocobench:{ name:'초코 벤치',   cat:'deco',   w:2, h:1, price:180, th:'cake' },
+  candles:   { name:'케이크 초',   cat:'deco',   w:1, h:1, price:70,  th:'cake' },
+  moon:      { name:'달님 조각상', cat:'deco',   w:1, h:1, price:220, th:'rainbow' },
+  rainbowflower:{ name:'무지개 꽃', cat:'nature', w:1, h:1, price:80, th:'rainbow' },
+  starpond:  { name:'별빛 연못',   cat:'nature', w:2, h:2, price:400, th:'rainbow' },
+  cloudtree: { name:'구름 나무',   cat:'nature', w:1, h:1, price:120, th:'rainbow' },
+  telescope: { name:'망원경',      cat:'deco',   w:1, h:1, price:180, th:'rainbow' },
+  rainbowslide:{ name:'무지개 미끄럼틀', cat:'deco', w:2, h:1, price:350, th:'rainbow' },
+  shootingstar:{ name:'별똥별 조형물', cat:'deco', w:1, h:1, price:160, th:'rainbow' },
+  planet:    { name:'행성 조형물', cat:'deco',   w:1, h:1, price:170, th:'rainbow' },
+  hotair:    { name:'무지개 열기구', cat:'deco', w:1, h:1, price:260, th:'rainbow' },
+  pinwheel:  { name:'무지개 바람개비', cat:'deco', w:1, h:1, price:60, th:'rainbow' },
+  giftbig:   { name:'왕 선물상자', cat:'deco',   w:2, h:2, price:400, th:'gift' },
+  musicbox:  { name:'하트 오르골', cat:'deco',   w:1, h:1, price:180, th:'gift' },
+  toytrain:  { name:'장난감 기차', cat:'deco',   w:2, h:1, price:300, th:'gift' },
+  rockinghorse:{ name:'흔들 목마', cat:'deco',   w:1, h:1, price:200, th:'gift' },
+  blocks:    { name:'장난감 블록', cat:'deco',   w:1, h:1, price:80,  th:'gift' },
+  jackbox:   { name:'깜짝 상자',   cat:'deco',   w:1, h:1, price:140, th:'gift' },
+  ribbonarch:{ name:'리본 아치',   cat:'deco',   w:2, h:1, price:250, th:'gift' },
+  cracker:   { name:'축하 폭죽',   cat:'deco',   w:1, h:1, price:90,  th:'gift' },
+  bowtree:   { name:'리본 나무',   cat:'nature', w:1, h:1, price:110, th:'gift' },
+  ballpit:   { name:'볼풀',        cat:'deco',   w:2, h:2, price:320, th:'gift' },
   path:      { name:'돌길',        cat:'floor',  w:1, h:1, price:10 },
   deck:      { name:'나무 데크',   cat:'floor',  w:1, h:1, price:15 },
   brick:     { name:'꽃돌길',      cat:'floor',  w:1, h:1, price:15 },
@@ -3758,6 +3819,648 @@ function vDrawCanon(id, x, y, w, d, t, mir){
       { const q = P(x + .5, y + .5); X.beginPath(); X.ellipse(q[0] + 3, q[1], 9, 4.6, 0, 0, TAU); X.fillStyle = '#ece7f3'; X.fill(); X.lineWidth = 1; X.strokeStyle = 'rgba(150,125,140,.45)'; X.stroke(); X.fillStyle = 'rgba(255,255,255,.7)'; X.beginPath(); X.ellipse(q[0] + 1, q[1] - 1.2, 4, 1.6, 0, 0, TAU); X.fill(); }
       break;
     }
+    // ===== 하트 오두막 테마 =====
+    case 'hay': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 4, sy + 2, 22, 8, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const bale = (bx, by, k) => {
+        X.beginPath(); X.moveTo(bx - 17 * k, by - 2); X.lineTo(bx - 17 * k, by - 22 * k); X.ellipse(bx, by - 22 * k, 17 * k, 8 * k, 0, Math.PI, 0); X.lineTo(bx + 17 * k, by - 2); X.ellipse(bx, by - 2, 17 * k, 8 * k, 0, 0, Math.PI); X.closePath();
+        const g = X.createLinearGradient(bx - 17 * k, 0, bx + 17 * k, 0); g.addColorStop(0, '#fff1b8'); g.addColorStop(1, '#f2d798'); X.fillStyle = g; X.fill(); ink(1.5);
+        X.beginPath(); X.ellipse(bx, by - 22 * k, 17 * k, 8 * k, 0, 0, TAU); X.fillStyle = '#fff8d8'; X.fill(); ink(1.5);
+        X.strokeStyle = '#e5c88a'; X.lineWidth = 1.2; X.beginPath(); for (let a = 0; a < 14; a += .3){ const r = a / 14; X.lineTo(bx + Math.cos(a) * 15 * k * r, by - 22 * k + Math.sin(a) * 6.8 * k * r); } X.stroke();
+        X.strokeStyle = '#f0aab0'; X.lineWidth = 2.4; X.beginPath(); X.ellipse(bx, by - 12 * k, 17 * k, 8 * k, 0, .05, Math.PI - .05); X.stroke();
+      };
+      bale(sx - 6, sy - 2, .82); bale(sx + 9, sy + 4, .9);
+      break;
+    }
+    case 'garden': {
+      gView(x + .08, y + .15, w - .16, d - .3, (bx, by, bw, bd) => {
+        fBox(bx, by, bw, bd, 7, 0, null, '#f3d2b0', '#e8bf9b');
+        poly([P(bx + .07, by + .07, 7), P(bx + bw - .07, by + .07, 7), P(bx + bw - .07, by + bd - .07, 7), P(bx + .07, by + bd - .07, 7)]); X.fillStyle = '#c49c80'; X.fill();
+        for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++){
+          const [sx, sy] = P(bx + .2 + i * (bw - .4) / 5, by + .22 + j * (bd - .44), 7), sw = Math.sin(t * 2 + i + j) * 1.2;
+          X.beginPath(); X.moveTo(sx - 3.2, sy); X.lineTo(sx + 3.2, sy); X.lineTo(sx, sy + 5); X.closePath(); X.fillStyle = '#ffb27a'; X.fill(); X.lineWidth = 1; X.strokeStyle = 'rgba(141,112,100,.6)'; X.stroke();
+          X.fillStyle = '#8fcd7a'; for (const a of [-.5, 0, .5]){ X.beginPath(); X.ellipse(sx + Math.sin(a) * 4 + sw, sy - 6, 2, 5.5, a, 0, TAU); X.fill(); }
+        }
+      });
+      break;
+    }
+    case 'heartarch': {
+      iShadow(x, y, w, d, .7);
+      const ax = x + .22, bx2 = x + w - .22;
+      for (const gx of [ax, bx2]) iCyl(gx, cy, 4, 50, '#f0cfa6');
+      const A = P(ax, cy, 50), B = P(bx2, cy, 50), mx = (A[0] + B[0]) / 2, my = Math.min(A[1], B[1]) - 30;
+      X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 9; X.beginPath(); X.moveTo(A[0], A[1]); X.quadraticCurveTo(mx, my, B[0], B[1]); X.stroke(); X.strokeStyle = '#a8db93'; X.lineWidth = 6; X.stroke();
+      for (let k = 0; k <= 8; k++){ const u = k / 8, qx = (1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * mx + u * u * B[0], qy = (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * my + u * u * B[1];
+        if (k % 2){ X.fillStyle = '#93cf80'; X.beginPath(); X.ellipse(qx + 3, qy + 4, 4, 2.2, .6, 0, TAU); X.fill(); }
+        iBall(qx, qy - 1, 4.2, k % 3 ? '#ffb3c7' : '#fff3c4', { lw:1.2 }); }
+      { const hx = mx, hy = (A[1] + B[1]) / 2 - 24; X.save(); X.translate(hx, hy); heartPath(0, 0, 10); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.8); X.restore(); }
+      break;
+    }
+    case 'heartpath': {
+      poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)]); X.fillStyle = '#fbe9dc'; X.fill(); X.strokeStyle = '#fbe9dc'; X.lineWidth = 1; X.stroke();
+      poly([P(x + .04, y + .04), P(x + .96, y + .04), P(x + .96, y + .96), P(x + .04, y + .96)]); X.lineWidth = 1.2; X.strokeStyle = 'rgba(230,180,160,.6)'; X.stroke();
+      for (const [u, v, k] of [[.32, .35, 7], [.68, .62, 6]]){ const [hx, hy] = P(x + u, y + v); X.save(); X.translate(hx, hy); X.scale(1, .55); heartPath(0, 0, k); X.fillStyle = '#ffc6d3'; X.fill(); X.lineWidth = 1.6; X.strokeStyle = 'rgba(214,120,150,.5)'; X.stroke(); X.restore(); }
+      for (let j = 0; j < 3; j++){ const [sx, sy] = P(x + .15 + hash(x + j, y) * .7, y + .15 + hash(y, x + j) * .7); X.fillStyle = '#fff'; X.beginPath(); X.arc(sx, sy, 1.4, 0, TAU); X.fill(); }
+      break;
+    }
+    // ===== 딸기 케이크 테마 =====
+    case 'cupcake': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 18, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx - 14, sy - 1); X.lineTo(sx - 17, sy - 24); X.lineTo(sx + 17, sy - 24); X.lineTo(sx + 14, sy - 1); X.ellipse(sx, sy - 1, 14, 5, 0, 0, Math.PI); X.closePath();
+      X.fillStyle = '#ffc6df'; X.fill(); X.save(); X.clip(); X.strokeStyle = '#ffa9c8'; X.lineWidth = 3; for (let k = -3; k <= 3; k++){ X.beginPath(); X.moveTo(sx + k * 5, sy + 4); X.lineTo(sx + k * 5.8, sy - 26); X.stroke(); } X.restore();
+      X.beginPath(); X.moveTo(sx - 14, sy - 1); X.lineTo(sx - 17, sy - 24); X.lineTo(sx + 17, sy - 24); X.lineTo(sx + 14, sy - 1); X.ellipse(sx, sy - 1, 14, 5, 0, 0, Math.PI); X.closePath(); ink(1.6);
+      iBall(sx, sy - 27, 19, '#fff6ef', { sq:.62 }); iBall(sx - 1, sy - 37, 14, '#ffe0ec', { sq:.7 }); iBall(sx, sy - 46, 9, '#fff6ef', { sq:.8 });
+      for (const [dx, dy, c] of [[-10, -30, '#a6d4ff'], [8, -27, '#fff0a8'], [-3, -40, '#b9ecc6'], [6, -38, '#d9c8ff']]){ X.fillStyle = c; X.beginPath(); X.ellipse(sx + dx, sy + dy, 2.2, 1, .6, 0, TAU); X.fill(); }
+      iBall(sx + 1, sy - 56, 5.5, '#ff7f96', { lw:1.4 }); X.strokeStyle = '#8fcd7a'; X.lineWidth = 1.6; X.beginPath(); X.moveTo(sx + 2, sy - 61); X.quadraticCurveTo(sx + 5, sy - 67, sx + 9, sy - 68); X.stroke();
+      break;
+    }
+    case 'lollipop': {
+      const [sx, sy] = P(cx, cy), sw = Math.sin(t * 1.2 + x) * 1.5;
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 14, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 6.5; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx + sw * .3, sy - 38); X.stroke(); X.strokeStyle = '#fffaf0'; X.lineWidth = 4; X.stroke();
+      const lx = sx + sw, ly = sy - 54;
+      X.beginPath(); X.arc(lx, ly, 20, 0, TAU); X.fillStyle = '#fff6ef'; X.fill(); ink(1.8);
+      X.save(); X.beginPath(); X.arc(lx, ly, 19, 0, TAU); X.clip();
+      const cols = ['#ffb3c7', '#fff0a8', '#b8e4ff', '#d9c8ff'];
+      for (let k = 0; k < 4; k++){ X.strokeStyle = cols[k]; X.lineWidth = 5; X.beginPath(); for (let a = 0; a < 15; a += .25){ const r = a * 1.3; X.lineTo(lx + Math.cos(a + k * Math.PI / 2 + t * .6) * r, ly + Math.sin(a + k * Math.PI / 2 + t * .6) * r); } X.stroke(); }
+      X.restore();
+      X.fillStyle = 'rgba(255,255,255,.75)'; X.beginPath(); X.ellipse(lx - 8, ly - 9, 5, 3, -.6, 0, TAU); X.fill();
+      X.beginPath(); X.moveTo(lx - 4, ly + 19); X.lineTo(lx - 11, ly + 27); X.lineTo(lx - 2, ly + 24); X.closePath(); X.moveTo(lx + 4, ly + 19); X.lineTo(lx + 11, ly + 27); X.lineTo(lx + 2, ly + 24); X.closePath(); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.2);
+      break;
+    }
+    case 'macaron': {
+      iShadow(x, y, 1, 1, .7);
+      iCyl(cx, cy, 4, 12, '#fffaf0', 0, { noTop:true });
+      iCyl(cx, cy, 20, 7, '#ffc6df', 12, { top:'#ffd9e8' });
+      iCyl(cx, cy, 18, 4, '#fff6ef', 19, { noTop:true });
+      iCyl(cx, cy, 20, 7, '#ffc6df', 23, { top:'#ffe6ef' });
+      const [tx, ty] = P(cx, cy, 30);
+      iBall(tx - 6, ty - 4, 5, '#b9ecc6', { sq:.7, lw:1.3 }); iBall(tx + 6, ty - 1, 5, '#d9c8ff', { sq:.7, lw:1.3 });
+      { const [kx, ky] = P(cx, cy, 30); X.fillStyle = '#fff'; X.beginPath(); X.ellipse(kx + 1, ky - 9, 3, 2, 0, 0, TAU); X.fill(); }
+      break;
+    }
+    case 'creamfloor': {
+      poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)]); X.fillStyle = '#fff4f7'; X.fill(); X.strokeStyle = '#fff4f7'; X.lineWidth = 1; X.stroke();
+      X.lineWidth = 1.2; X.strokeStyle = 'rgba(255,170,196,.7)'; X.beginPath();
+      for (let k = 0; k < 4; k++){ const a = P(x + k / 4, y + .5), b = P(x + (k + 1) / 4, y + .5); X.moveTo(a[0], a[1]); X.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 5, b[0], b[1]); }
+      X.stroke();
+      const cols = ['#ffb3c7', '#a6d4ff', '#fff0a8', '#b9ecc6', '#d9c8ff'];
+      for (let j = 0; j < 6; j++){ const [sx, sy] = P(x + .12 + hash(x * 3 + j, y) * .76, y + .12 + hash(y * 3 + j, x) * .76); X.fillStyle = cols[j % 5]; X.beginPath(); X.ellipse(sx, sy, 2.4, 1.1, j, 0, TAU); X.fill(); }
+      break;
+    }
+    // ===== 무지개 별 테마 =====
+    case 'starlamp': {
+      iShadow(x, y, 1, 1, .5);
+      iCyl(cx, cy, 6, 4, '#d9c8ff', 0);
+      iCyl(cx, cy, 3, 46, '#e9e1ff', 4);
+      const [lx, ly] = P(cx, cy, 60), gl = .3 + Math.sin(t * 3) * .1;
+      X.fillStyle = `rgba(255,240,170,${gl})`; X.beginPath(); X.arc(lx, ly, 24, 0, TAU); X.fill();
+      X.save(); X.translate(lx, ly); X.rotate(Math.sin(t * 1.5) * .12); drawStar(0, 0, 13, '#fff0a8', 2); X.restore();
+      X.fillStyle = '#fff'; for (let k = 0; k < 3; k++){ const a = t * 1.2 + k * 2.1; X.beginPath(); X.arc(lx + Math.cos(a) * 20, ly + Math.sin(a) * 10, 1.6, 0, TAU); X.fill(); }
+      break;
+    }
+    case 'cloudbench': {
+      iShadow(x, y, w, d, .8);
+      const n = 5, pts = []; for (let k = 0; k < n; k++){ const u = .18 + k * (w - .36) / (n - 1); pts.push(u); }
+      for (const u of pts){ const [sx, sy] = P(x + u, y + .38, 26); iBall(sx, sy, 10, '#ffffff', { lw:1.6 }); }
+      for (const u of pts){ const [sx, sy] = P(x + u, y + .58, 12); iBall(sx, sy, 11, '#fbfbff', { lw:1.6, sq:.8 }); }
+      break;
+    }
+    case 'rainarch': {
+      iShadow(x, y, w, d, .6);
+      let A = P(x + .25, cy, 6), B = P(x + w - .25, cy, 6); if (A[0] > B[0]) [A, B] = [B, A];
+      const cols = ['#ffb3c7', '#ffd2a8', '#fff0a8', '#bdf0d8', '#b8e4ff', '#d9c8ff'];
+      // 세로로 선 무지개: 두 받침 사이를 잇는 반원
+      const arch = (inset, hgt) => { X.beginPath(); for (let i = 0; i <= 24; i++){ const u = i / 24, uu = inset + (1 - 2 * inset) * u, px = A[0] + (B[0] - A[0]) * uu, py = A[1] + (B[1] - A[1]) * uu - hgt * Math.sin(Math.PI * u); i ? X.lineTo(px, py) : X.moveTo(px, py); } };
+      X.lineCap = 'round'; X.lineJoin = 'round';
+      arch(-.02, 64); X.lineWidth = 7; X.strokeStyle = VINK; X.stroke();
+      for (let k = 0; k < 6; k++){ arch(-.01 + k * .045, 62 - k * 5); X.strokeStyle = cols[k]; X.lineWidth = 6; X.stroke(); }
+      arch(.27, 33); X.lineWidth = 1.8; X.strokeStyle = VINK; X.stroke();
+      for (const [px, py] of [A, B]) for (const [dx, dy, r] of [[-10, 2, 8], [0, -5, 10], [10, 2, 8]]) iBall(px + dx, py + dy, r, '#ffffff', { lw:1.5 });
+      break;
+    }
+    case 'crystal': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 18, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const prism = (px, py, h, wd, col, tilt) => {
+        X.save(); X.translate(px, py); X.rotate(tilt);
+        X.beginPath(); X.moveTo(-wd, 0); X.lineTo(-wd, -h); X.lineTo(0, -h - wd * 1.4); X.lineTo(wd, -h); X.lineTo(wd, 0); X.closePath(); X.fillStyle = col; X.fill(); ink(1.5);
+        X.beginPath(); X.moveTo(0, 0); X.lineTo(0, -h); X.lineTo(-wd, -h); X.lineTo(-wd, 0); X.closePath(); X.fillStyle = 'rgba(255,255,255,.45)'; X.fill();
+        X.beginPath(); X.moveTo(0, -h); X.lineTo(0, -h - wd * 1.4); X.moveTo(0, 0); X.lineTo(0, -h); X.lineWidth = 1; X.strokeStyle = 'rgba(141,112,100,.5)'; X.stroke();
+        X.restore();
+      };
+      prism(sx - 9, sy, 20, 6, '#c9f0ff', -.35); prism(sx + 10, sy + 1, 17, 6, '#ffd1e4', .3); prism(sx, sy + 2, 30, 8, '#dccdff', 0);
+      for (let k = 0; k < 3; k++){ const ph = (t * .8 + k / 3) % 1; X.globalAlpha = Math.sin(ph * Math.PI); drawStar(sx - 14 + k * 14, sy - 40 + k * 6 - ph * 6, 3.5, '#fff6b8', 1); X.globalAlpha = 1; }
+      break;
+    }
+    case 'starfloor': {
+      poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)]); X.fillStyle = '#ece5ff'; X.fill(); X.strokeStyle = '#ece5ff'; X.lineWidth = 1; X.stroke();
+      poly([P(x + .05, y + .05), P(x + .95, y + .05), P(x + .95, y + .95), P(x + .05, y + .95)]); X.lineWidth = 1.2; X.strokeStyle = 'rgba(180,160,230,.6)'; X.stroke();
+      { const [sx, sy] = P(x + .5, y + .5); X.save(); X.translate(sx, sy); X.scale(1, .5); drawStar(0, 0, 8, '#fff6b8', 1.2); X.restore(); }
+      for (let j = 0; j < 4; j++){ const [sx, sy] = P(x + .12 + hash(x * 5 + j, y) * .76, y + .12 + hash(y * 5 + j, x) * .76); X.fillStyle = j % 2 ? '#fff' : '#fff0a8'; X.beginPath(); X.arc(sx, sy, 1.5, 0, TAU); X.fill(); }
+      break;
+    }
+    // ===== 선물상자 테마 =====
+    case 'giftpile': {
+      iShadow(x, y, 1, 1, .8);
+      const box = (bx, by, s, h, z, col, rib) => {
+        iBox(bx, by, s, s, h, col, z, { r:4 });
+        const [rx, ry, rw, rd] = gRect(bx, by, s, s);
+        noGT(() => {
+          poly([P(rx + rw * .4, ry, z + h), P(rx + rw * .6, ry, z + h), P(rx + rw * .6, ry + rd, z + h), P(rx + rw * .4, ry + rd, z + h)]); X.fillStyle = rib; X.fill();
+          poly([P(rx, ry + rd * .4, z + h), P(rx + rw, ry + rd * .4, z + h), P(rx + rw, ry + rd * .6, z + h), P(rx, ry + rd * .6, z + h)]); X.fill();
+          for (const fc of ['L', 'R']){ facePath(fc, rx, ry, rw, rd, (fc === 'L' ? rw : rd) * .4, z, (fc === 'L' ? rw : rd) * .6, z + h, false); X.fillStyle = rib; X.fill(); }
+          const [kx, ky] = P(rx + rw / 2, ry + rd / 2, z + h);
+          for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(kx + s2 * 6, ky - 4, 6, 4, s2 * .5, 0, TAU); X.fillStyle = rib; X.fill(); ink(1.2); }
+          iBall(kx, ky - 3, 2.6, rib, { lw:1 });
+        });
+      };
+      box(x + .12, y + .2, .5, 18, 0, '#bde8ff', '#ffb3c7');
+      box(x + .5, y + .45, .42, 15, 0, '#ffd6e6', '#fff0a8');
+      box(x + .26, y + .32, .4, 13, 18, '#e3d6ff', '#bdf0d8');
+      break;
+    }
+    case 'teddy': {
+      const [sx, sy] = P(cx, cy), m = gFace('L', x, y, 1, 1, [.5]), facing = !!m, side = m ? (m[0] === 'L' ? -1 : 1) : 0;
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 17, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const fur = '#f3d2b0', fur2 = '#fbe6cf';
+      for (const s2 of [-1, 1]) iBall(sx + s2 * 11, sy - 4, 7, fur, { lw:1.5 });
+      iBall(sx, sy - 17, 15, fur);
+      if (facing) iBall(sx, sy - 14, 8.5, fur2, { lw:0 });
+      for (const s2 of [-1, 1]) iBall(sx + s2 * 15, sy - 20, 6, fur, { lw:1.5 });
+      for (const s2 of [-1, 1]){ iBall(sx + s2 * 10, sy - 50, 6, fur, { lw:1.5 }); if (facing) iBall(sx + s2 * 10, sy - 50, 3, '#ffc6d3', { lw:0 }); }
+      iBall(sx, sy - 38, 15, fur);
+      if (facing){
+        const fx = sx + side * 2;
+        iBall(fx, sy - 33, 6, fur2, { lw:1.2 });
+        X.fillStyle = VINK; X.beginPath(); X.arc(fx - 5.5, sy - 41, 1.8, 0, TAU); X.arc(fx + 5.5, sy - 41, 1.8, 0, TAU); X.fill();
+        X.beginPath(); X.ellipse(fx, sy - 35, 2.4, 1.6, 0, 0, TAU); X.fill();
+        X.fillStyle = 'rgba(255,150,170,.45)'; X.beginPath(); X.ellipse(fx - 10, sy - 36, 3, 1.8, 0, 0, TAU); X.ellipse(fx + 10, sy - 36, 3, 1.8, 0, 0, TAU); X.fill();
+        for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(sx + s2 * 6, sy - 26, 5.5, 3.5, s2 * .4, 0, TAU); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.2); }
+        iBall(sx, sy - 26, 2.6, '#ff9fb4', { lw:1 });
+      } else { X.beginPath(); X.ellipse(sx, sy - 6, 4, 3, 0, 0, TAU); X.fillStyle = fur2; X.fill(); }
+      break;
+    }
+    case 'balloons': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 2, sy + 2, 10, 4, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const bl = [[-14, -58, '#ffb3c7'], [10, -64, '#b8e4ff'], [-2, -76, '#fff0a8'], [16, -46, '#d9c8ff']];
+      X.strokeStyle = 'rgba(141,112,100,.7)'; X.lineWidth = 1.1;
+      for (const [dx, dy] of bl){ const sw = Math.sin(t * 1.6 + dx) * 3; X.beginPath(); X.moveTo(sx, sy - 6); X.quadraticCurveTo(sx + dx * .3, sy + dy * .5, sx + dx + sw, sy + dy + 12); X.stroke(); }
+      for (const [dx, dy, c] of bl){ const sw = Math.sin(t * 1.6 + dx) * 3; iBall(sx + dx + sw, sy + dy, 11, c, { sq:1.15 }); X.beginPath(); X.moveTo(sx + dx + sw - 2.5, sy + dy + 14); X.lineTo(sx + dx + sw + 2.5, sy + dy + 14); X.lineTo(sx + dx + sw, sy + dy + 11); X.closePath(); X.fillStyle = c; X.fill(); }
+      iBox(cx - .1, cy - .1, .2, .2, 7, '#ffc6df', 0, { r:3 });
+      break;
+    }
+    case 'giftfloor': {
+      poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)]); X.fillStyle = '#e4f8ef'; X.fill(); X.strokeStyle = '#e4f8ef'; X.lineWidth = 1; X.stroke();
+      X.save(); poly([P(x, y), P(x + 1, y), P(x + 1, y + 1), P(x, y + 1)]); X.clip();
+      X.strokeStyle = 'rgba(255,179,199,.7)'; X.lineWidth = 3.4; X.beginPath(); for (let k = -1; k < 4; k++){ const a = P(x + k * .34, y), b = P(x + k * .34 + .5, y + 1); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); } X.stroke();
+      X.restore();
+      for (let j = 0; j < 3; j++){ const [sx, sy] = P(x + .2 + j * .3, y + .25 + (j % 2) * .45); X.fillStyle = '#fff0a8'; X.beginPath(); X.ellipse(sx, sy, 2.4, 1.3, 0, 0, TAU); X.fill(); }
+      break;
+    }
+    // ===== 하트 오두막 테마 2 =====
+    case 'scarecrow': {
+      const [sx, sy] = P(cx, cy), sw = Math.sin(t * 1.4 + x) * 1.5;
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 14, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 6; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx, sy - 50); X.moveTo(sx - 20 + sw, sy - 36); X.lineTo(sx + 20 + sw, sy - 36); X.stroke();
+      X.strokeStyle = '#e0b590'; X.lineWidth = 3.5; X.stroke();
+      X.beginPath(); X.moveTo(sx - 13 + sw, sy - 40); X.lineTo(sx + 13 + sw, sy - 40); X.lineTo(sx + 10, sy - 18); X.lineTo(sx - 10, sy - 18); X.closePath(); X.fillStyle = '#b8e4ff'; X.fill(); ink(1.5);
+      X.fillStyle = '#ffc6d3'; X.fillRect(sx - 3, sy - 32, 6, 6);
+      iBall(sx + sw * .5, sy - 52, 10, '#fff1d6');
+      X.fillStyle = VINK; X.beginPath(); X.arc(sx - 3.5 + sw * .5, sy - 53, 1.4, 0, TAU); X.arc(sx + 3.5 + sw * .5, sy - 53, 1.4, 0, TAU); X.fill();
+      X.strokeStyle = VINK; X.lineWidth = 1.2; X.beginPath(); X.arc(sx + sw * .5, sy - 50, 3, .2, Math.PI - .2); X.stroke();
+      X.beginPath(); X.ellipse(sx + sw * .5, sy - 60, 16, 4.5, 0, 0, TAU); X.fillStyle = '#f2d798'; X.fill(); ink(1.4);
+      X.beginPath(); X.ellipse(sx + sw * .5, sy - 64, 8, 6, 0, Math.PI, 0); X.fill(); ink(1.4);
+      X.fillStyle = '#ff9fb4'; X.fillRect(sx - 8 + sw * .5, sy - 63, 16, 2.5);
+      break;
+    }
+    case 'woodcart': {
+      iShadow(x, y, w, d, .8);
+      gView(x + .15, y + .22, w - .3, d - .44, (bx, by, bw, bd) => {
+        fBox(bx, by, bw, bd, 14, 10, '#f3d2b0', '#ebc6a2', '#dcb08c');
+        X.strokeStyle = 'rgba(180,130,95,.35)'; X.lineWidth = 1; X.beginPath(); for (const v of [15, 19]){ const a = P(bx, by + bd, v), b = P(bx + bw, by + bd, v); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); } X.stroke();
+        for (const u of [.3, bw - .3]){ const [wx, wy] = P(bx + u, by + bd + .02, 8); X.beginPath(); X.ellipse(wx, wy, 7, 9, -.45, 0, TAU); X.fillStyle = '#fffaf0'; X.fill(); ink(1.6); X.beginPath(); X.ellipse(wx, wy, 2.4, 3, -.45, 0, TAU); X.fillStyle = '#e0b590'; X.fill(); }
+        const cols = ['#ffb27a', '#ff9ea0', '#b9ecc6', '#fff0a8', '#ffb27a', '#d2c0ff'];
+        for (let k = 0; k < 6; k++){ const [px, py] = P(bx + .2 + (k % 3) * (bw - .4) / 2, by + .2 + Math.floor(k / 3) * (bd - .4), 25); iBall(px, py, 5.5, cols[k], { lw:1.3 }); }
+        { const a = P(bx - .05, by + bd / 2, 18), b = P(bx - .5, by + bd / 2, 12); X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 5; X.beginPath(); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.stroke(); X.strokeStyle = '#e0b590'; X.lineWidth = 3; X.stroke(); }
+      });
+      break;
+    }
+    case 'windmill': {
+      iShadow(x, y, 1, 1, .8);
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.moveTo(sx - 17, sy); X.lineTo(sx - 10, sy - 56); X.lineTo(sx + 10, sy - 56); X.lineTo(sx + 17, sy); X.ellipse(sx, sy, 17, 7, 0, 0, Math.PI); X.closePath();
+      const g = X.createLinearGradient(sx - 17, 0, sx + 17, 0); g.addColorStop(0, '#fffaf0'); g.addColorStop(1, '#f6e8d6'); X.fillStyle = g; X.fill(); ink(1.6);
+      X.beginPath(); X.moveTo(sx - 13, sy - 56); X.lineTo(sx, sy - 74); X.lineTo(sx + 13, sy - 56); X.closePath(); X.fillStyle = '#ffaaa2'; X.fill(); ink(1.6);
+      faceDot('L', x, y, 1, 1, .5, 8, 5, '#ffc9d6');
+      const hx = sx + 1, hy = sy - 52, rot = t * 1.4;
+      for (let k = 0; k < 4; k++){ const a = rot + k * Math.PI / 2; X.save(); X.translate(hx, hy); X.rotate(a); X.beginPath(); X.rect(3, -4, 26, 8); X.fillStyle = k % 2 ? '#fff6ef' : '#ffe0ec'; X.fill(); ink(1.3); X.restore(); }
+      iBall(hx, hy, 3.5, '#f0cba6', { lw:1.2 });
+      break;
+    }
+    case 'pumpkin': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 18, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const pk = (px, py, r, col) => { for (const [dx, k] of [[-r * .45, .62], [r * .45, .62], [0, .7]]) iBall(px + dx, py - r * .8, r * k, col, { sq:.85, lw:1.5 }); X.strokeStyle = '#93cf80'; X.lineWidth = 3; X.lineCap = 'round'; X.beginPath(); X.moveTo(px, py - r * 1.35); X.quadraticCurveTo(px + 3, py - r * 1.7, px + 6, py - r * 1.75); X.stroke(); };
+      pk(sx - 7, sy - 2, 13, '#ffcf9a'); pk(sx + 9, sy + 4, 10, '#ffe0b5');
+      break;
+    }
+    case 'henhouse': {
+      iShadow(x, y, 1, 1, .8);
+      gView(x + .18, y + .2, .64, .6, (bx, by, bw, bd, info) => {
+        for (const [u, v] of [[.08, .08], [bw - .08, .08], [.08, bd - .08], [bw - .08, bd - .08]]) iCyl(bx + u, by + v, 2, 10, '#e0b590', 0, { noTop:true });
+        fBox(bx, by, bw, bd, 18, 10, null, '#fffaf0', '#f6e8d6');
+        const zb = 28, zr = 42, ym = by + bd / 2, o = .08;
+        const A = P(bx - o, by + bd + o, zb), B = P(bx + bw + o, by + bd + o, zb), C = P(bx + bw + o, ym, zr), D = P(bx - o, ym, zr), E = P(bx + bw + o, by - o, zb);
+        poly([P(bx + bw, by + bd, zb), P(bx + bw, by, zb), P(bx + bw, ym, zr - 2)]); X.fillStyle = '#f6e8d6'; X.fill(); ink(1.3);
+        poly([C, E, [E[0], E[1] + 3]]); X.fillStyle = '#e8908b'; X.fill(); ink(1.2);
+        poly([A, B, C, D]); X.fillStyle = '#ffaaa2'; X.fill(); ink(1.6);
+        if (info.L === 'front'){ facePath('L', bx, by, bw, bd, bw * .3, 10, bw * .7, 24, true); X.fillStyle = '#c49c80'; X.fill(); ink(1.2); }
+      });
+      const [hx, hy] = P(cx + .35, cy + .38), hop = Math.abs(Math.sin(t * 4 + x)) * 3;
+      iBall(hx, hy - 6 - hop, 6, '#fff3a8', { lw:1.4 }); X.fillStyle = '#ffb27a'; X.beginPath(); X.moveTo(hx + 5, hy - 7 - hop); X.lineTo(hx + 9, hy - 6 - hop); X.lineTo(hx + 5, hy - 5 - hop); X.fill();
+      X.fillStyle = VINK; X.beginPath(); X.arc(hx + 2, hy - 8 - hop, 1, 0, TAU); X.fill();
+      break;
+    }
+    case 'milkcan': {
+      iShadow(x, y, 1, 1, .6);
+      for (const [gx, gy, k] of [[cx - .16, cy + .08, 1], [cx + .2, cy - .12, .82]].sort((a, b) => (GT ? GT(a[0], a[1]) : a).reduce((u, v) => u + v) - (GT ? GT(b[0], b[1]) : b).reduce((u, v) => u + v))){
+        iCyl(gx, gy, 9 * k, 22 * k, '#eef2f8', 0);
+        const [tx, ty] = iCyl(gx, gy, 5 * k, 7 * k, '#e3e8f2', 22 * k);
+        iCyl(gx, gy, 6.5 * k, 2.5, '#d6dcea', 29 * k);
+        const [bx2, by2] = P(gx, gy, 12 * k); X.fillStyle = '#ffc6d3'; X.fillRect(bx2 - 9 * k, by2 - 2, 18 * k, 3.5);
+      }
+      break;
+    }
+    case 'applebasket': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 17, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx - 16, sy - 16); X.lineTo(sx - 12, sy); X.ellipse(sx, sy, 12, 5, 0, Math.PI, 0, true); X.lineTo(sx + 16, sy - 16); X.closePath(); X.fillStyle = '#f0cba6'; X.fill(); ink(1.6);
+      X.save(); X.clip(); X.strokeStyle = 'rgba(180,130,95,.45)'; X.lineWidth = 1.2; for (let k = -4; k <= 4; k++){ X.beginPath(); X.moveTo(sx + k * 4, sy - 18); X.lineTo(sx + k * 3, sy + 4); X.stroke(); } X.restore();
+      for (const [dx, dy, c] of [[-8, -18, '#ff9ea0'], [3, -20, '#ffb3b3'], [11, -17, '#ff9ea0'], [-2, -25, '#b9ecc6'], [7, -27, '#ff9ea0']]){ iBall(sx + dx, sy + dy, 5.8, c, { lw:1.3 }); X.strokeStyle = '#a07a5c'; X.lineWidth = 1.2; X.beginPath(); X.moveTo(sx + dx, sy + dy - 5); X.lineTo(sx + dx + 1, sy + dy - 8); X.stroke(); }
+      X.beginPath(); X.ellipse(sx, sy - 16, 16, 6, 0, Math.PI, TAU); X.lineWidth = 1.6; X.strokeStyle = VINK; X.stroke();
+      X.beginPath(); X.ellipse(sx, sy - 16, 13, 18, 0, Math.PI, TAU); X.strokeStyle = VINK; X.lineWidth = 4.5; X.stroke(); X.strokeStyle = '#e0b590'; X.lineWidth = 2.5; X.stroke();
+      break;
+    }
+    case 'beehive': {
+      iShadow(x, y, 1, 1, .6);
+      iCyl(cx, cy, 4, 10, '#e0b590', 0, { noTop:true });
+      iBox(cx - .26, cy - .26, .52, .52, 12, '#fff1b8', 10, { r:4 });
+      iBox(cx - .23, cy - .23, .46, .46, 11, '#ffe9a3', 22, { r:4 });
+      iBox(cx - .3, cy - .3, .6, .6, 4, '#ffd9c2', 33, { r:3 });
+      faceDot('L', cx - .26, cy - .26, .52, .52, .26, 14, 2.6, '#c49c80');
+      for (let k = 0; k < 2; k++){ const a = t * 2.5 + k * 3, [bx2, by2] = P(cx, cy, 30); const ex = bx2 + Math.cos(a) * 20, ey = by2 - 8 + Math.sin(a * 1.6) * 8;
+        iBall(ex, ey, 3.6, '#fff0a8', { lw:1 }); X.fillStyle = VINK; X.fillRect(ex - .6, ey - 3.4, 1.4, 6.8); X.fillStyle = 'rgba(255,255,255,.85)'; X.beginPath(); X.ellipse(ex - 1, ey - 4.5, 2.4, 1.6, -.4, 0, TAU); X.fill(); }
+      break;
+    }
+    case 'woodpile': {
+      iShadow(x, y, 1, 1, .7);
+      const [sx, sy] = P(cx, cy);
+      const log = (lx, ly) => { X.beginPath(); X.ellipse(lx, ly, 7, 7, 0, 0, TAU); X.fillStyle = '#f3d2b0'; X.fill(); ink(1.5); X.strokeStyle = 'rgba(180,130,95,.6)'; X.lineWidth = 1; X.beginPath(); X.arc(lx, ly, 3.6, 0, TAU); X.stroke(); X.beginPath(); X.arc(lx, ly, 1.2, 0, TAU); X.stroke(); };
+      X.beginPath(); X.moveTo(sx - 20, sy - 6); X.lineTo(sx + 2, sy + 5); X.lineTo(sx + 2, sy - 27); X.lineTo(sx - 20, sy - 38); X.closePath(); X.fillStyle = '#d9ab88'; X.fill(); ink(1.5);
+      for (const [dx, dy] of [[8, -2], [22, -9], [15, -15], [29, -16], [22, -22], [15, -29]]) log(sx + dx - 8, sy + dy);
+      break;
+    }
+    case 'rosebush': {
+      const [bx2, by2] = P(cx, cy);
+      X.beginPath(); X.ellipse(bx2 + 3, by2 + 2, 20, 8, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.22)'; X.fill();
+      fBlobs([[bx2, by2 - 16, 13], [bx2 - 11, by2 - 7, 11], [bx2 + 11, by2 - 7, 11], [bx2, by2 - 4, 10]]);
+      for (const [dx, dy, c] of [[-9, -12, '#ffb3c7'], [6, -20, '#ffc6d3'], [12, -6, '#ffb3c7'], [-2, -5, '#fff3c4'], [-13, -2, '#ffc6d3'], [2, -13, '#ff9fb4']]){ iBall(bx2 + dx, by2 + dy, 4, c, { lw:1.1 }); X.strokeStyle = 'rgba(214,120,150,.6)'; X.lineWidth = .9; X.beginPath(); X.arc(bx2 + dx, by2 + dy, 1.8, 0, 5); X.stroke(); }
+      break;
+    }
+    // ===== 딸기 케이크 테마 2 =====
+    case 'donut': {
+      iShadow(x, y, 1, 1, .7);
+      const [sx, sy] = P(cx, cy, 6);
+      X.beginPath(); X.ellipse(sx, sy, 22, 11, 0, 0, TAU); X.ellipse(sx, sy + 2, 22, 13, 0, 0, TAU); X.fillStyle = '#f3c48e'; X.fill(); ink(1.6);
+      X.beginPath(); X.ellipse(sx, sy - 3, 21, 10.5, 0, 0, TAU); X.fillStyle = '#ffc6df'; X.fill(); ink(1.4);
+      X.beginPath(); X.ellipse(sx, sy - 3, 7, 3.5, 0, 0, TAU); X.fillStyle = '#d9ab88'; X.fill(); ink(1.4);
+      const cols = ['#fff', '#b8e4ff', '#fff0a8', '#b9ecc6', '#d2c0ff'];
+      for (let k = 0; k < 12; k++){ const a = k / 12 * TAU + .3, r = 14; X.fillStyle = cols[k % 5]; X.beginPath(); X.ellipse(sx + Math.cos(a) * r, sy - 3 + Math.sin(a) * r * .5, 2.2, 1, a, 0, TAU); X.fill(); }
+      break;
+    }
+    case 'icecream': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 12, 5, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx - 12, sy - 34); X.lineTo(sx + 12, sy - 34); X.closePath(); X.fillStyle = '#f3c48e'; X.fill(); ink(1.6);
+      X.save(); X.clip(); X.strokeStyle = 'rgba(190,130,80,.5)'; X.lineWidth = 1.2; for (let k = -3; k <= 3; k++){ X.beginPath(); X.moveTo(sx + k * 6 - 10, sy - 36); X.lineTo(sx + k * 6 + 10, sy); X.moveTo(sx + k * 6 + 10, sy - 36); X.lineTo(sx + k * 6 - 10, sy); X.stroke(); } X.restore();
+      iBall(sx, sy - 39, 12.5, '#b9ecc6'); iBall(sx - 2, sy - 55, 11.5, '#ffc6df'); iBall(sx + 1, sy - 69, 10, '#fff4dc');
+      iBall(sx + 3, sy - 80, 4.5, '#ff7f96', { lw:1.3 });
+      break;
+    }
+    case 'cakestand': {
+      iShadow(x, y, 1, 1, .7);
+      iCyl(cx, cy, 6, 4, '#fffaf0', 0); iCyl(cx, cy, 2.5, 20, '#fffaf0', 4, { noTop:true });
+      iCyl(cx, cy, 20, 3, '#ffe0ec', 22);
+      for (const [dx, dy, c] of [[-.15, -.1, '#ffc6df'], [.15, .05, '#fff4dc'], [-.02, .18, '#b9ecc6']]){ const [mx, my] = P(cx + dx, cy + dy, 25); iBall(mx, my - 4, 5.5, c, { sq:.8, lw:1.2 }); iBall(mx, my - 9, 2, '#ff7f96', { lw:.8 }); }
+      iCyl(cx, cy, 2, 14, '#fffaf0', 25, { noTop:true }); iCyl(cx, cy, 13, 3, '#ffe0ec', 39);
+      { const [mx, my] = P(cx, cy, 42); iBall(mx, my - 6, 7, '#ffc6df', { sq:.85, lw:1.3 }); iBall(mx, my - 13, 2.6, '#ff7f96', { lw:1 }); }
+      break;
+    }
+    case 'strawberry': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 16, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx, sy - 2); X.bezierCurveTo(sx - 26, sy - 18, sx - 20, sy - 46, sx, sy - 44); X.bezierCurveTo(sx + 20, sy - 46, sx + 26, sy - 18, sx, sy - 2); X.closePath();
+      const g = X.createRadialGradient(sx - 6, sy - 32, 2, sx, sy - 24, 24); g.addColorStop(0, '#ffc2c8'); g.addColorStop(1, '#ff8f9c'); X.fillStyle = g; X.fill(); ink(1.8);
+      X.fillStyle = '#fff3c4'; for (let k = 0; k < 9; k++){ const px = sx + ((k % 3) - 1) * 8 + (Math.floor(k / 3) % 2) * 3, py = sy - 34 + Math.floor(k / 3) * 9; X.beginPath(); X.ellipse(px, py, 1.4, 2, 0, 0, TAU); X.fill(); }
+      X.fillStyle = '#93cf80'; for (const a of [-1, -.4, .2, .8]){ X.beginPath(); X.ellipse(sx + Math.sin(a) * 9, sy - 44 + Math.cos(a) * 2, 7, 3, a * .8, 0, TAU); X.fill(); }
+      X.strokeStyle = '#79ad6c'; X.lineWidth = 2; X.beginPath(); X.moveTo(sx, sy - 46); X.lineTo(sx + 2, sy - 52); X.stroke();
+      break;
+    }
+    case 'candycane': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 2, sy + 2, 10, 4, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const path = () => { X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx, sy - 52); X.arc(sx + 9, sy - 52, 9, Math.PI, 0); X.lineTo(sx + 18, sy - 44); };
+      X.lineCap = 'round'; path(); X.strokeStyle = VINK; X.lineWidth = 10; X.stroke(); path(); X.strokeStyle = '#fffaf0'; X.lineWidth = 7; X.stroke();
+      path(); X.setLineDash([5, 5]); X.lineDashOffset = -t * 6; X.strokeStyle = '#ff9fb4'; X.lineWidth = 7; X.stroke(); X.setLineDash([]);
+      X.save(); X.translate(sx + 9, sy - 30); heartPath(0, 0, 7); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.3); X.restore();
+      break;
+    }
+    case 'pudding': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 20, 8, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.ellipse(sx, sy, 22, 9, 0, 0, TAU); X.fillStyle = '#ffffff'; X.fill(); ink(1.5);
+      const wob = Math.sin(t * 3) * 1.2;
+      X.beginPath(); X.moveTo(sx - 18, sy - 2); X.lineTo(sx - 12 - wob, sy - 30); X.lineTo(sx + 12 + wob, sy - 30); X.lineTo(sx + 18, sy - 2); X.ellipse(sx, sy - 2, 18, 7, 0, 0, Math.PI); X.closePath(); X.fillStyle = '#fff1b8'; X.fill(); ink(1.6);
+      X.beginPath(); X.ellipse(sx, sy - 30, 12 + wob, 5, 0, 0, TAU); X.fillStyle = '#d9a26e'; X.fill(); ink(1.4);
+      X.beginPath(); X.moveTo(sx - 11, sy - 29); X.quadraticCurveTo(sx - 9, sy - 20, sx - 7, sy - 26); X.quadraticCurveTo(sx - 3, sy - 18, sx, sy - 26); X.quadraticCurveTo(sx + 5, sy - 19, sx + 8, sy - 27); X.lineTo(sx + 11, sy - 29); X.closePath(); X.fill();
+      iBall(sx, sy - 37, 4.5, '#ff7f96', { lw:1.2 });
+      break;
+    }
+    case 'teacup': {
+      iShadow(x, y, 1, 1, .8);
+      const [sx, sy] = P(cx, cy, 2);
+      X.beginPath(); X.ellipse(sx, sy, 24, 11, 0, 0, TAU); X.fillStyle = '#fffaf0'; X.fill(); ink(1.5);
+      X.beginPath(); X.moveTo(sx - 18, sy - 26); X.quadraticCurveTo(sx - 18, sy + 2, sx, sy + 2); X.quadraticCurveTo(sx + 18, sy + 2, sx + 18, sy - 26); X.closePath(); X.fillStyle = '#ffe0ec'; X.fill(); ink(1.6);
+      X.beginPath(); X.ellipse(sx + 21, sy - 16, 6, 7, 0, -1.3, 1.3); X.lineWidth = 5; X.strokeStyle = VINK; X.stroke(); X.lineWidth = 3; X.strokeStyle = '#ffe0ec'; X.stroke();
+      X.beginPath(); X.ellipse(sx, sy - 26, 18, 7, 0, 0, TAU); X.fillStyle = '#fffaf0'; X.fill(); ink(1.5);
+      X.beginPath(); X.ellipse(sx, sy - 25, 14, 5, 0, 0, TAU); X.fillStyle = '#e8c4a8'; X.fill();
+      for (const dx of [-8, 0, 8]){ X.save(); X.translate(sx + dx, sy - 12); heartPath(0, 0, 3.5); X.fillStyle = '#ff9fb4'; X.fill(); X.restore(); }
+      for (let k = 0; k < 2; k++){ const ph = (t * .5 + k / 2) % 1; X.strokeStyle = `rgba(255,255,255,${.9 - ph * .8})`; X.lineWidth = 2.4; X.beginPath(); X.moveTo(sx - 4 + k * 8, sy - 32 - ph * 14); X.quadraticCurveTo(sx - 8 + k * 8, sy - 38 - ph * 14, sx - 4 + k * 8, sy - 44 - ph * 14); X.stroke(); }
+      break;
+    }
+    case 'jellytree': {
+      const [sx, sy] = P(cx, cy), sw = Math.sin(t * 1.5 + x) * 1.2;
+      X.beginPath(); X.ellipse(sx + 4, sy + 2, 18, 7, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx - 4, sy + 1); X.lineTo(sx - 3, sy - 26); X.lineTo(sx + 3, sy - 26); X.lineTo(sx + 4, sy + 1); X.closePath(); X.fillStyle = '#fffaf0'; X.fill(); ink(1.4);
+      X.save(); X.clip(); X.strokeStyle = '#ffb3c7'; X.lineWidth = 2; for (let k = 0; k < 5; k++){ X.beginPath(); X.moveTo(sx - 5, sy - k * 6); X.lineTo(sx + 5, sy - k * 6 - 4); X.stroke(); } X.restore();
+      const cols = ['#ffb3c7', '#b9ecc6', '#fff0a8', '#b8e4ff', '#d2c0ff', '#ffd2a8'];
+      [[0, -46, 13], [-14, -36, 11], [14, -36, 11], [-8, -56, 10], [9, -57, 10], [0, -32, 10]].forEach(([dx, dy, r], i) => { X.globalAlpha = .9; iBall(sx + dx + sw * (-dy / 56), sy + dy, r, cols[i], { lw:1.4 }); X.globalAlpha = 1; });
+      break;
+    }
+    case 'chocobench': {
+      iShadow(x, y, w, d, .8);
+      for (const gx of [x + .25, x + w - .25]) iCyl(gx, y + .5, 3.5, 10, '#fffaf0');
+      iBox(x + .1, y + .3, w - .2, .4, 6, '#b5876a', 10, { r:3 });
+      const [rx, ry, rw, rd] = gRect(x + .1, y + .3, w - .2, .4);
+      noGT(() => { X.strokeStyle = 'rgba(80,45,30,.35)'; X.lineWidth = 1.2; X.beginPath(); const long = rw > rd; for (let k = 1; k < 5; k++){ const a = long ? P(rx + rw * k / 5, ry, 16) : P(rx, ry + rd * k / 5, 16), b = long ? P(rx + rw * k / 5, ry + rd, 16) : P(rx + rw, ry + rd * k / 5, 16); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); } X.stroke(); });
+      iBox(x + .1, y + .2, w - .2, .12, 16, '#c99b7d', 15, { r:4 });
+      { const [ix, iy] = P(x + w / 2, y + .26, 31); for (let k = -3; k <= 3; k++){ X.fillStyle = '#fff6ef'; X.beginPath(); X.ellipse(ix + k * 7, iy + Math.abs(k % 2) * 2, 4, 3, 0, 0, TAU); X.fill(); } }
+      break;
+    }
+    case 'candles': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 16, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      [[-10, 2, 30, '#b8e4ff'], [0, -3, 40, '#ffc6df'], [10, 3, 26, '#fff0a8']].forEach(([dx, dy, h, c], i) => {
+        const bx2 = sx + dx, by2 = sy + dy;
+        X.beginPath(); X.rect(bx2 - 4, by2 - h, 8, h); X.fillStyle = c; X.fill(); X.save(); X.clip(); X.strokeStyle = 'rgba(255,255,255,.85)'; X.lineWidth = 2.4; for (let k = 0; k < 8; k++){ X.beginPath(); X.moveTo(bx2 - 6, by2 - k * 7); X.lineTo(bx2 + 6, by2 - k * 7 - 6); X.stroke(); } X.restore();
+        X.beginPath(); X.rect(bx2 - 4, by2 - h, 8, h); ink(1.4);
+        const fl = 1 + Math.sin(t * 9 + i) * .12; X.beginPath(); X.ellipse(bx2, by2 - h - 7, 3.2 * fl, 6 * fl, 0, 0, TAU); X.fillStyle = '#ffd36b'; X.fill(); X.beginPath(); X.ellipse(bx2, by2 - h - 6, 1.5, 3, 0, 0, TAU); X.fillStyle = '#fff6c4'; X.fill();
+        X.fillStyle = 'rgba(255,230,150,.25)'; X.beginPath(); X.arc(bx2, by2 - h - 7, 10, 0, TAU); X.fill();
+      });
+      break;
+    }
+    // ===== 무지개 별 테마 2 =====
+    case 'moon': {
+      iShadow(x, y, 1, 1, .6);
+      iCyl(cx, cy, 12, 10, '#e9e1ff', 0);
+      const [mx, my] = P(cx, cy, 34), bob = Math.sin(t * 1.6) * 2;
+      X.fillStyle = 'rgba(255,240,170,.25)'; X.beginPath(); X.arc(mx, my + bob, 24, 0, TAU); X.fill();
+      { const yb = my + bob; X.beginPath(); X.moveTo(mx + 6, yb - 19); X.bezierCurveTo(mx - 26, yb - 17, mx - 26, yb + 17, mx + 6, yb + 19); X.bezierCurveTo(mx - 9, yb + 12, mx - 9, yb - 12, mx + 6, yb - 19); X.closePath(); X.fillStyle = '#fff3a8'; X.fill(); ink(1.8); }
+      X.fillStyle = VINK; X.beginPath(); X.arc(mx - 10, my - 2 + bob, 1.4, 0, TAU); X.fill(); X.fillStyle = 'rgba(255,150,170,.5)'; X.beginPath(); X.ellipse(mx - 13, my + 4 + bob, 3, 1.8, 0, 0, TAU); X.fill();
+      drawStar(mx + 15, my - 22 + bob, 4.5, '#fff', 1.2);
+      break;
+    }
+    case 'rainbowflower': {
+      const [sx, sy] = P(cx, cy), sw = Math.sin(t * 1.8 + x) * 2;
+      X.beginPath(); X.ellipse(sx + 2, sy + 2, 12, 5, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.strokeStyle = '#93cf80'; X.lineWidth = 3; X.lineCap = 'round'; X.beginPath(); X.moveTo(sx, sy); X.quadraticCurveTo(sx - 3, sy - 22, sx + sw, sy - 42); X.stroke();
+      X.fillStyle = '#a8db93'; X.beginPath(); X.ellipse(sx - 7, sy - 16, 8, 3.5, -.6, 0, TAU); X.ellipse(sx + 7, sy - 24, 8, 3.5, .6, 0, TAU); X.fill();
+      const cols = ['#ffb3c7', '#ffd2a8', '#fff0a8', '#bdf0d8', '#b8e4ff', '#d9c8ff'], fx = sx + sw, fy = sy - 46;
+      for (let k = 0; k < 6; k++){ const a = k / 6 * TAU + t * .4; X.beginPath(); X.ellipse(fx + Math.cos(a) * 9, fy + Math.sin(a) * 9, 7, 5, a, 0, TAU); X.fillStyle = cols[k]; X.fill(); X.lineWidth = 1.2; X.strokeStyle = VINK; X.stroke(); }
+      iBall(fx, fy, 5.5, '#fff6c4', { lw:1.3 });
+      break;
+    }
+    case 'starpond': {
+      const [px, py] = P(x + w / 2, y + d / 2);
+      X.beginPath(); X.ellipse(px, py, 52, 26, 0, 0, TAU); X.fillStyle = '#ece5ff'; X.fill(); ink(2);
+      X.beginPath(); X.ellipse(px, py + 1, 44, 21, 0, 0, TAU); const g = X.createLinearGradient(px, py - 21, px, py + 21); g.addColorStop(0, '#d6eaff'); g.addColorStop(1, '#b9c9ff'); X.fillStyle = g; X.fill();
+      for (let k = 0; k < 9; k++){ const a = k * 2.4, r = 10 + (k * 7) % 28, tw = .5 + .5 * Math.sin(t * 3 + k); X.globalAlpha = .4 + tw * .6; drawStar(px + Math.cos(a) * r, py + Math.sin(a) * r * .45, 2.5 + (k % 3), '#fff6b8', .8); X.globalAlpha = 1; }
+      for (let k = 0; k < 7; k++){ const a = k / 7 * TAU, rx = px + Math.cos(a) * 48, ry = py + Math.sin(a) * 24; iBall(rx, ry, 4.5, k % 2 ? '#d9c8ff' : '#fffaf0', { lw:1.2 }); }
+      break;
+    }
+    case 'cloudtree': {
+      const [sx, sy] = P(cx, cy), sw = Math.sin(t * 1.2 + x) * 1.2;
+      X.beginPath(); X.ellipse(sx + 5, sy + 2, 20, 8, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.beginPath(); X.moveTo(sx - 5, sy + 1); X.quadraticCurveTo(sx - 3, sy - 14, sx - 3.5, sy - 26); X.lineTo(sx + 3.5, sy - 26); X.quadraticCurveTo(sx + 3, sy - 14, sx + 5, sy + 1); X.closePath(); X.fillStyle = '#e9e1ff'; X.fill(); ink(1.5);
+      [[0, -46, 15, '#ffffff'], [-14, -36, 12, '#fdf4ff'], [14, -37, 12, '#f4fbff'], [-7, -57, 11, '#fff8fb'], [8, -56, 11, '#ffffff']].forEach(([dx, dy, r, c]) => iBall(sx + dx + sw * (-dy / 56), sy + dy, r, c, { lw:1.6 }));
+      X.fillStyle = 'rgba(184,228,255,.55)'; X.beginPath(); X.ellipse(sx + sw, sy - 36, 18, 4, 0, 0, Math.PI); X.fill();
+      break;
+    }
+    case 'telescope': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 15, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.lineCap = 'round'; for (const [ex, ey] of [[-12, 4], [12, 4], [0, -4]]){ X.strokeStyle = VINK; X.lineWidth = 5; X.beginPath(); X.moveTo(sx, sy - 28); X.lineTo(sx + ex, sy + ey); X.stroke(); X.strokeStyle = '#f0cba6'; X.lineWidth = 3; X.stroke(); }
+      const m = gFace('L', x, y, 1, 1, [.5]), dir = m ? (m[0] === 'L' ? -1 : 1) : (GT ? -1 : 1);
+      X.save(); X.translate(sx, sy - 30); X.scale(dir, 1); X.rotate(-.5);
+      X.beginPath(); X.roundRect(-8, -6, 30, 12, 5); X.fillStyle = '#d2c0ff'; X.fill(); ink(1.6);
+      X.beginPath(); X.roundRect(20, -8, 10, 16, 4); X.fillStyle = '#b8e4ff'; X.fill(); ink(1.5);
+      X.fillStyle = '#fff0a8'; X.fillRect(4, -6, 4, 12);
+      X.restore();
+      drawStar(sx + dir * 28, sy - 58 + Math.sin(t * 2) * 2, 5, '#fff6b8', 1.2);
+      break;
+    }
+    case 'rainbowslide': {
+      iShadow(x, y, w, d, .7);
+      const ax = x + .25, bx2 = x + w - .2;
+      for (const v of [cy - .2, cy + .2]){ iCyl(ax, v, 2.6, 46, '#e9e1ff', 0, { noTop:true }); }
+      for (let k = 1; k <= 4; k++){ const a = P(ax, cy - .2, k * 10), b = P(ax, cy + .2, k * 10); X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 4.5; X.beginPath(); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.stroke(); X.strokeStyle = '#fff0a8'; X.lineWidth = 2.5; X.stroke(); }
+      const top = [P(ax + .05, cy - .2, 46), P(ax + .05, cy + .2, 46)], bot = [P(bx2, cy - .2, 3), P(bx2, cy + .2, 3)];
+      const cols = ['#ffb3c7', '#ffd2a8', '#fff0a8', '#bdf0d8', '#b8e4ff', '#d9c8ff'];
+      for (let k = 0; k < 6; k++){ const u0 = k / 6, u1 = (k + 1) / 6, L2 = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+        const q = [L2(top[0], top[1], u0), L2(top[0], top[1], u1), L2(bot[0], bot[1], u1), L2(bot[0], bot[1], u0)];
+        X.beginPath(); X.moveTo(q[0][0], q[0][1]); X.lineTo(q[1][0], q[1][1]); X.quadraticCurveTo((q[1][0] + q[2][0]) / 2 - 6, (q[1][1] + q[2][1]) / 2 + 10, q[2][0], q[2][1]); X.lineTo(q[3][0], q[3][1]); X.quadraticCurveTo((q[3][0] + q[0][0]) / 2 - 6, (q[3][1] + q[0][1]) / 2 + 10, q[0][0], q[0][1]); X.closePath(); X.fillStyle = cols[k]; X.fill(); }
+      X.beginPath(); X.moveTo(top[0][0], top[0][1]); X.lineTo(top[1][0], top[1][1]); X.quadraticCurveTo((top[1][0] + bot[1][0]) / 2 - 6, (top[1][1] + bot[1][1]) / 2 + 10, bot[1][0], bot[1][1]); X.lineTo(bot[0][0], bot[0][1]); X.quadraticCurveTo((bot[0][0] + top[0][0]) / 2 - 6, (bot[0][1] + top[0][1]) / 2 + 10, top[0][0], top[0][1]); ink(1.8);
+      break;
+    }
+    case 'shootingstar': {
+      iShadow(x, y, 1, 1, .5);
+      iCyl(cx, cy, 6, 4, '#e9e1ff', 0); iCyl(cx, cy, 2.4, 38, '#fffaf0', 4, { noTop:true });
+      const [sx, sy] = P(cx, cy, 52), bob = Math.sin(t * 2) * 2;
+      const cols = ['#ffb3c7', '#fff0a8', '#b8e4ff', '#d9c8ff'];
+      cols.forEach((c, k) => { X.strokeStyle = c; X.lineWidth = 4.5; X.lineCap = 'round'; X.beginPath(); X.moveTo(sx - 4, sy + bob + (k - 1.5) * 4); X.quadraticCurveTo(sx - 22, sy + 10 + bob + (k - 1.5) * 4, sx - 38, sy + 4 + bob + (k - 1.5) * 5); X.stroke(); });
+      X.save(); X.translate(sx + 2, sy + bob); X.rotate(Math.sin(t * 1.4) * .15); drawStar(0, 0, 14, '#fff0a8', 2); X.restore();
+      X.fillStyle = VINK; X.beginPath(); X.arc(sx - 2, sy + bob - 1, 1.3, 0, TAU); X.arc(sx + 6, sy + bob - 1, 1.3, 0, TAU); X.fill();
+      break;
+    }
+    case 'planet': {
+      iShadow(x, y, 1, 1, .6);
+      iCyl(cx, cy, 10, 8, '#e9e1ff', 0); iCyl(cx, cy, 2.4, 14, '#fffaf0', 8, { noTop:true });
+      const [px, py] = P(cx, cy, 38), tilt = -.35;
+      X.save(); X.translate(px, py); X.rotate(tilt); X.beginPath(); X.ellipse(0, 0, 30, 8, 0, Math.PI, TAU); X.lineWidth = 6.5; X.strokeStyle = VINK; X.stroke(); X.lineWidth = 4; X.strokeStyle = '#fff0a8'; X.stroke(); X.restore();
+      iBall(px, py, 16, '#ffd1e4');
+      X.save(); X.beginPath(); X.arc(px, py, 15, 0, TAU); X.clip(); X.strokeStyle = 'rgba(255,255,255,.55)'; X.lineWidth = 3; X.beginPath(); X.moveTo(px - 16, py + 4); X.lineTo(px + 16, py - 2); X.stroke(); X.restore();
+      X.save(); X.translate(px, py); X.rotate(tilt); X.beginPath(); X.ellipse(0, 0, 30, 8, 0, 0, Math.PI); X.lineWidth = 6.5; X.strokeStyle = VINK; X.stroke(); X.lineWidth = 4; X.strokeStyle = '#fff0a8'; X.stroke(); X.restore();
+      { const a = t * 1.3; iBall(px + Math.cos(a) * 26, py - 18 + Math.sin(a) * 6, 3.4, '#b8e4ff', { lw:1 }); }
+      break;
+    }
+    case 'hotair': {
+      const [sx, sy] = P(cx, cy), bob = Math.sin(t * 1.3 + x) * 3;
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 14, 5, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const by2 = sy - 14 + bob;
+      X.strokeStyle = 'rgba(141,112,100,.8)'; X.lineWidth = 1.2; X.beginPath(); X.moveTo(sx - 8, by2 - 8); X.lineTo(sx - 13, by2 - 32); X.moveTo(sx + 8, by2 - 8); X.lineTo(sx + 13, by2 - 32); X.stroke();
+      X.beginPath(); X.roundRect(sx - 9, by2 - 10, 18, 13, 3); X.fillStyle = '#f0cba6'; X.fill(); ink(1.5);
+      const cy2 = by2 - 52, cols = ['#ffb3c7', '#ffd2a8', '#fff0a8', '#bdf0d8', '#b8e4ff', '#d9c8ff'];
+      X.save(); X.beginPath(); X.moveTo(sx - 13, cy2 + 22); X.bezierCurveTo(sx - 34, cy2 + 4, sx - 30, cy2 - 30, sx, cy2 - 30); X.bezierCurveTo(sx + 30, cy2 - 30, sx + 34, cy2 + 4, sx + 13, cy2 + 22); X.closePath(); X.clip();
+      for (let k = 0; k < 6; k++){ X.fillStyle = cols[k]; X.fillRect(sx - 36 + k * 12, cy2 - 32, 12, 56); }
+      X.restore();
+      X.beginPath(); X.moveTo(sx - 13, cy2 + 22); X.bezierCurveTo(sx - 34, cy2 + 4, sx - 30, cy2 - 30, sx, cy2 - 30); X.bezierCurveTo(sx + 30, cy2 - 30, sx + 34, cy2 + 4, sx + 13, cy2 + 22); X.closePath(); ink(1.8);
+      X.fillStyle = 'rgba(255,255,255,.55)'; X.beginPath(); X.ellipse(sx - 14, cy2 - 14, 5, 10, .4, 0, TAU); X.fill();
+      break;
+    }
+    case 'pinwheel': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 2, sy + 2, 10, 4, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 5; X.beginPath(); X.moveTo(sx, sy); X.lineTo(sx, sy - 44); X.stroke(); X.strokeStyle = '#fffaf0'; X.lineWidth = 3; X.stroke();
+      const hx = sx, hy = sy - 46, cols = ['#ffb3c7', '#fff0a8', '#b8e4ff', '#bdf0d8'];
+      for (let k = 0; k < 4; k++){ X.save(); X.translate(hx, hy); X.rotate(t * 3 + k * Math.PI / 2); X.beginPath(); X.moveTo(0, 0); X.lineTo(0, -18); X.quadraticCurveTo(14, -16, 12, -2); X.closePath(); X.fillStyle = cols[k]; X.fill(); ink(1.3); X.restore(); }
+      iBall(hx, hy, 3.2, '#d9c8ff', { lw:1.1 });
+      break;
+    }
+    // ===== 선물상자 테마 2 =====
+    case 'giftbig': {
+      iShadow(x, y, w, d, 1);
+      iBox(x + .2, y + .2, w - .4, d - .4, 42, '#bde8ff', 0, { r:8 });
+      iBox(x + .12, y + .12, w - .24, d - .24, 10, '#d6f1ff', 42, { r:6 });
+      const [rx, ry, rw, rd] = gRect(x + .2, y + .2, w - .4, d - .4);
+      noGT(() => {
+        facePath('L', rx, ry, rw, rd, rw * .42, 0, rw * .58, 42, false); X.fillStyle = '#ffb3c7'; X.fill(); ink(1.3);
+        facePath('R', rx, ry, rw, rd, rd * .42, 0, rd * .58, 42, false); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.3);
+        const z = 52, [ax, ay, aw, ad] = [rx - .08, ry - .08, rw + .16, rd + .16];
+        poly([P(ax + aw * .42, ay, z), P(ax + aw * .58, ay, z), P(ax + aw * .58, ay + ad, z), P(ax + aw * .42, ay + ad, z)]); X.fillStyle = '#ffc6d3'; X.fill(); ink(1.2);
+        poly([P(ax, ay + ad * .42, z), P(ax + aw, ay + ad * .42, z), P(ax + aw, ay + ad * .58, z), P(ax, ay + ad * .58, z)]); X.fill(); ink(1.2);
+        const [kx, ky] = P(rx + rw / 2, ry + rd / 2, z);
+        for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(kx + s2 * 20, ky - 14, 20, 12, s2 * .5, 0, TAU); X.fillStyle = '#ffc6d3'; X.fill(); ink(2); X.beginPath(); X.ellipse(kx + s2 * 20, ky - 14, 9, 4.5, s2 * .5, 0, TAU); X.fillStyle = '#ff9fb4'; X.fill(); }
+        iBall(kx, ky - 10, 7, '#ffb3c7');
+      });
+      faceDot('L', x + .2, y + .2, w - .4, d - .4, .35, 26, 4, '#fff0a8'); faceDot('L', x + .2, y + .2, w - .4, d - .4, 1.25, 18, 4, '#fff0a8'); faceDot('R', x + .2, y + .2, w - .4, d - .4, .35, 30, 4, '#fff0a8');
+      break;
+    }
+    case 'musicbox': {
+      iShadow(x, y, 1, 1, .7);
+      iBox(cx - .3, cy - .25, .6, .5, 16, '#ffd6e6', 0, { r:4 });
+      faceDot('L', cx - .3, cy - .25, .6, .5, .3, 8, 3.5, '#fff0a8');
+      const [px, py] = P(cx, cy, 16), sp = t * 2;
+      iCyl(cx, cy, 6, 3, '#fff0a8', 16);
+      X.save(); X.translate(px, py - 14); X.scale(Math.cos(sp), 1); X.save(); X.translate(0, -2); heartPath(0, 0, 9); X.fillStyle = '#ff9fb4'; X.fill(); ink(1.5); X.restore(); X.restore();
+      X.strokeStyle = VINK; X.lineWidth = 1.6; X.beginPath(); X.moveTo(px, py - 3); X.lineTo(px, py - 8); X.stroke();
+      for (let k = 0; k < 2; k++){ const ph = (t * .6 + k / 2) % 1; X.globalAlpha = 1 - ph; X.fillStyle = VINK; X.font = '13px sans-serif'; X.fillText('♪', px + 12 + ph * 10, py - 22 - ph * 22 - k * 4); X.globalAlpha = 1; }
+      break;
+    }
+    case 'toytrain': {
+      iShadow(x, y, w, d, .7);
+      gView(x + .1, y + .3, w - .2, d - .6, (bx, by, bw, bd, info) => {
+        const wheel = (u) => { const [wx, wy] = P(bx + u, by + bd + .02, 4); X.beginPath(); X.ellipse(wx, wy, 5, 6, -.45, 0, TAU); X.fillStyle = '#d2c0ff'; X.fill(); ink(1.3); };
+        fBox(bx + 1.05, by, .7, bd, 14, 6, '#fff0a8', '#ffe58f', '#f2d36a');
+        for (const u of [1.2, 1.6]) wheel(u);
+        fBox(bx, by, .95, bd, 16, 6, null, '#ffc6df', '#f7a8c6');
+        fBox(bx, by, .4, bd, 14, 22, '#b8e4ff', '#a6d4ff', '#8fc4f2');
+        for (const u of [.2, .7]) wheel(u);
+        iCyl(bx + .78, by + bd / 2, 4, 12, '#d2c0ff', 22);
+        const ph = (t * .8) % 1, [sx, sy] = P(bx + .78, by + bd / 2, 36); X.globalAlpha = 1 - ph; iBall(sx - ph * 10, sy - ph * 18, 4 + ph * 4, '#ffffff', { lw:1 }); X.globalAlpha = 1;
+        { const [lx, ly] = P(bx + .2, by + bd, 14); X.fillStyle = '#fff6ef'; X.beginPath(); X.roundRect(lx - 4, ly - 6, 9, 7, 2); X.fill(); }
+      });
+      break;
+    }
+    case 'rockinghorse': {
+      const [sx, sy] = P(cx, cy), rk = Math.sin(t * 2) * .12;
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 18, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      const m = gFace('L', x, y, 1, 1, [.5]), dir = m && m[0] === 'R' ? 1 : -1;
+      X.save(); X.translate(sx, sy - 4); X.rotate(rk); X.scale(dir, 1);
+      X.beginPath(); X.ellipse(0, -40, 26, 46, 0, Math.PI * .28, Math.PI * .72); X.lineWidth = 5.5; X.strokeStyle = VINK; X.stroke(); X.lineWidth = 3.5; X.strokeStyle = '#f0cba6'; X.stroke();
+      X.lineCap = 'round'; for (const lx of [-9, 9]){ X.strokeStyle = VINK; X.lineWidth = 5; X.beginPath(); X.moveTo(lx, -14); X.lineTo(lx * 1.2, 1); X.stroke(); X.strokeStyle = '#fffaf0'; X.lineWidth = 3; X.stroke(); }
+      X.beginPath(); X.ellipse(0, -20, 15, 9, 0, 0, TAU); X.fillStyle = '#fffaf0'; X.fill(); ink(1.5);
+      X.beginPath(); X.moveTo(9, -24); X.quadraticCurveTo(14, -38, 18, -40); X.lineTo(26, -37); X.quadraticCurveTo(26, -32, 20, -31); X.quadraticCurveTo(18, -26, 13, -18); X.closePath(); X.fillStyle = '#fffaf0'; X.fill(); ink(1.5);
+      X.fillStyle = '#ffb3c7'; for (let k = 0; k < 4; k++){ X.beginPath(); X.ellipse(9 + k * 2.5, -30 - k * 2.4, 3.2, 2.2, .8, 0, TAU); X.fill(); }
+      X.beginPath(); X.ellipse(-16, -18, 4, 7, .5, 0, TAU); X.fill();
+      X.fillStyle = VINK; X.beginPath(); X.arc(20, -35, 1.3, 0, TAU); X.fill();
+      X.fillStyle = '#b8e4ff'; X.beginPath(); X.ellipse(-1, -28, 7, 3, 0, 0, TAU); X.fill();
+      X.restore();
+      break;
+    }
+    case 'blocks': {
+      iShadow(x, y, 1, 1, .8);
+      const cube = (bx, by, z, col, mark) => { iBox(bx, by, .32, .32, 14, col, z, { r:3 }); const [px, py] = P(bx + .16, by + .16, z + 14); X.fillStyle = mark; X.beginPath(); X.ellipse(px, py, 3.6, 1.8, 0, 0, TAU); X.fill(); };
+      cube(cx - .36, cy - .2, 0, '#ffd6e6', '#ff9fb4'); cube(cx + .02, cy - .18, 0, '#d6f1ff', '#8fc4f2'); cube(cx - .2, cy + .12, 0, '#fff0a8', '#f2c94c');
+      cube(cx - .18, cy - .2, 14, '#e3d6ff', '#b39cff');
+      faceDot('L', cx - .2, cy + .12, .32, .32, .16, 7, 3.4, '#fff'); faceDot('R', cx + .02, cy - .18, .32, .32, .16, 7, 3.4, '#fff');
+      break;
+    }
+    case 'jackbox': {
+      iShadow(x, y, 1, 1, .7);
+      iBox(cx - .26, cy - .26, .52, .52, 16, '#bdf0d8', 0, { r:4 });
+      faceDot('L', cx - .26, cy - .26, .52, .52, .26, 8, 4, '#ffb3c7'); faceDot('R', cx - .26, cy - .26, .52, .52, .26, 8, 4, '#fff0a8');
+      const [px, py] = P(cx, cy, 16), up = 10 + Math.abs(Math.sin(t * 2.4)) * 14;
+      X.strokeStyle = VINK; X.lineWidth = 2; X.beginPath(); for (let k = 0; k <= 20; k++){ const yy = py - k / 20 * up; X.lineTo(px + Math.sin(k * 1.6) * 5, yy); } X.stroke();
+      iBall(px, py - up - 9, 10, '#fff0a8');
+      X.fillStyle = VINK; X.beginPath(); X.arc(px - 3.5, py - up - 10, 1.4, 0, TAU); X.arc(px + 3.5, py - up - 10, 1.4, 0, TAU); X.fill();
+      X.strokeStyle = VINK; X.lineWidth = 1.3; X.beginPath(); X.arc(px, py - up - 8, 3.4, .2, Math.PI - .2); X.stroke();
+      X.beginPath(); X.moveTo(px - 8, py - up - 16); X.lineTo(px, py - up - 30); X.lineTo(px + 8, py - up - 16); X.closePath(); X.fillStyle = '#ffb3c7'; X.fill(); ink(1.3); iBall(px, py - up - 31, 2.6, '#fff', { lw:1 });
+      { const lidA = P(cx - .26, cy - .26, 16), lidB = P(cx + .26, cy - .26, 16); X.beginPath(); X.moveTo(lidA[0], lidA[1]); X.lineTo(lidB[0], lidB[1]); X.lineTo(lidB[0] + 4, lidB[1] - 18); X.lineTo(lidA[0] + 4, lidA[1] - 18); X.closePath(); X.fillStyle = '#d6f8e8'; X.fill(); ink(1.4); }
+      break;
+    }
+    case 'ribbonarch': {
+      iShadow(x, y, w, d, .7);
+      const ax = x + .22, bx2 = x + w - .22;
+      for (const gx of [ax, bx2]) iCyl(gx, cy, 4, 50, '#fffaf0');
+      for (const gx of [ax, bx2]){ X.save(); const [p1, p2] = [P(gx, cy, 6), P(gx, cy, 48)]; X.strokeStyle = '#ffb3c7'; X.lineWidth = 2.5; X.setLineDash([4, 6]); X.beginPath(); X.moveTo(p1[0] - 4, p1[1]); X.lineTo(p2[0] + 4, p2[1]); X.stroke(); X.setLineDash([]); X.restore(); }
+      let A = P(ax, cy, 50), B = P(bx2, cy, 50); if (A[0] > B[0]) [A, B] = [B, A];
+      const mx = (A[0] + B[0]) / 2, my = Math.min(A[1], B[1]) - 28;
+      X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 9; X.beginPath(); X.moveTo(A[0], A[1]); X.quadraticCurveTo(mx, my, B[0], B[1]); X.stroke(); X.strokeStyle = '#d6f1ff'; X.lineWidth = 6; X.stroke();
+      for (let k = 1; k < 6; k++){ const u = k / 6, qx = (1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * mx + u * u * B[0], qy = (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * my + u * u * B[1];
+        for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(qx + s2 * 4, qy, 4.5, 3, s2 * .5, 0, TAU); X.fillStyle = k % 2 ? '#ffc6d3' : '#fff0a8'; X.fill(); ink(1); } }
+      { const hx = mx, hy = (A[1] + B[1]) / 2 - 26; for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(hx + s2 * 11, hy, 11, 7, s2 * .5, 0, TAU); X.fillStyle = '#ffb3c7'; X.fill(); ink(1.6); } iBall(hx, hy, 4.5, '#ff9fb4', { lw:1.3 }); }
+      break;
+    }
+    case 'cracker': {
+      const [sx, sy] = P(cx, cy);
+      X.beginPath(); X.ellipse(sx + 3, sy + 2, 15, 6, 0, 0, TAU); X.fillStyle = 'rgba(100,150,90,.2)'; X.fill();
+      [[-9, 2, -.35, '#ffc6df'], [9, 3, .35, '#b8e4ff']].forEach(([dx, dy, a, c]) => { X.save(); X.translate(sx + dx, sy + dy); X.rotate(a); X.beginPath(); X.moveTo(-7, 0); X.lineTo(0, -32); X.lineTo(7, 0); X.closePath(); X.fillStyle = c; X.fill(); ink(1.5); X.strokeStyle = '#fff'; X.lineWidth = 2; X.beginPath(); X.moveTo(-4.5, -9); X.lineTo(4.5, -9); X.moveTo(-2.6, -19); X.lineTo(2.6, -19); X.stroke(); X.restore(); });
+      const ph = (t * .7) % 1, cols = ['#ffb3c7', '#fff0a8', '#b8e4ff', '#bdf0d8', '#d9c8ff'];
+      for (let k = 0; k < 12; k++){ const a = -Math.PI / 2 + (k / 11 - .5) * 2.2, r = 10 + ph * 30, px = sx + Math.cos(a) * r, py = sy - 36 + Math.sin(a) * r + ph * ph * 20; X.globalAlpha = 1 - ph; X.fillStyle = cols[k % 5]; X.save(); X.translate(px, py); X.rotate(k + t * 4); X.fillRect(-2.5, -1.2, 5, 2.4); X.restore(); X.globalAlpha = 1; }
+      break;
+    }
+    case 'bowtree': {
+      const [sx, sy] = P(cx, cy);
+      farmTree(sx, sy, .62, t, false);
+      for (const [dx, dy, c] of [[-12, -34, '#ffb3c7'], [10, -42, '#fff0a8'], [-2, -50, '#b8e4ff'], [14, -27, '#d2c0ff']]){ const bx2 = sx + dx, by2 = sy + dy; for (const s2 of [-1, 1]){ X.beginPath(); X.ellipse(bx2 + s2 * 4, by2, 4.5, 3, s2 * .5, 0, TAU); X.fillStyle = c; X.fill(); ink(1); } iBall(bx2, by2, 1.8, c, { lw:.8 }); }
+      break;
+    }
+    case 'ballpit': {
+      gView(x + .1, y + .1, w - .2, d - .2, (bx, by, bw, bd) => {
+        fBox(bx, by, bw, bd, 14, 0, null, '#bde8ff', '#a6d4ff');
+        poly([P(bx + .08, by + .08, 14), P(bx + bw - .08, by + .08, 14), P(bx + bw - .08, by + bd - .08, 14), P(bx + .08, by + bd - .08, 14)]); X.fillStyle = '#e8f6ff'; X.fill();
+        const cols = ['#ffb3c7', '#fff0a8', '#b8e4ff', '#bdf0d8', '#d9c8ff', '#ffd2a8'];
+        const balls = []; for (let k = 0; k < 26; k++) balls.push([bx + .18 + hash(k, 3) * (bw - .36), by + .18 + hash(3, k) * (bd - .36), cols[k % 6]]);
+        balls.sort((a, b) => a[0] + a[1] - b[0] - b[1]);
+        for (const [gx, gy, c] of balls){ const [px, py] = P(gx, gy, 16); iBall(px, py, 5.5, c, { lw:1.2 }); }
+        { const a = P(bx, by + bd, 14), b = P(bx + bw, by + bd, 14), c = P(bx + bw, by, 14); X.lineCap = 'round'; X.strokeStyle = VINK; X.lineWidth = 6; X.beginPath(); X.moveTo(a[0], a[1]); X.lineTo(b[0], b[1]); X.lineTo(c[0], c[1]); X.stroke(); X.strokeStyle = '#ffc6df'; X.lineWidth = 3.6; X.stroke(); }
+      });
+      break;
+    }
     case 'deck': case 'brick': {
       const top = id === 'deck' ? PC.wood : '#ffdbe8', edge = id === 'deck' ? PC.wood2 : '#f5b9cf';
       rpoly([P(x + .02, y + .02), P(x + .98, y + .02), P(x + .98, y + .98, -3), P(x + .02, y + .98, -3)], 4); X.fillStyle = edge; X.fill();
@@ -3846,7 +4549,8 @@ function drawBHouseV(style, t, bx, by, bw, bd, info){
     } break;
   }
 }
-const vHeight = id => ({ house:130, nature:62, deco:64, floor:6 })[VITEMS[id].cat];
+const VH_TALL = { balloons:96, rainarch:84, heartarch:84, lollipop:82, starlamp:76, cupcake:72, scarecrow:78, windmill:96, icecream:96, jellytree:72, cloudtree:72, hotair:110, shootingstar:72, planet:66, moon:66, rainbowflower:66, pinwheel:72, jackbox:80, ribbonarch:84, bowtree:68, giftbig:72, telescope:66, cakestand:62, candles:60, strawberry:58 };
+const vHeight = id => VH_TALL[id] || ({ house:130, nature:62, deco:64, floor:6 })[VITEMS[id].cat];
 function vLayout(){
   const c = V.cv, w = c.clientWidth, h = c.clientHeight;
   const top = (document.querySelector('.vtop') || {}).offsetHeight || 0, bot = (document.querySelector('.vtray') || {}).offsetHeight || 0;
@@ -3986,7 +4690,7 @@ const NPC_LINES = {
   somi:['포근해~', '구름 위를 걷는 기분!', '살랑살랑~'],
   banjjak:['반짝반짝!', '별이 보고 싶어', '오늘 하루도 빛나!'],
 };
-const NPC_SPOT = { bench:'쉬는 중~', fountain:'시원하다!', well:'물 한 모금!', swing:'슝~!', flowerbed:'꽃 냄새~', sunflower:'해바라기다!', pond:'개구리 있나?', lamp:'반짝반짝', mailbox:'편지 왔나?', tree:'그늘 좋다~' };
+const NPC_SPOT = { scarecrow:'안녕 허수아비!', windmill:'빙글빙글~', henhouse:'삐약삐약!', beehive:'꿀 냄새~', applebasket:'사과 하나만!', donut:'도넛 방석 푹신!', icecream:'아이스크림 먹고 싶다', teacup:'차 한잔~', pudding:'말랑말랑!', candles:'소원 빌자!', moon:'달님 안녕~', telescope:'별 보인다!', rainbowslide:'슝~ 미끄럼!', hotair:'날아가고 싶다', starpond:'별이 비친다!', planet:'우주다!', musicbox:'노래 나온다~', toytrain:'칙칙폭폭!', rockinghorse:'이랴이랴!', jackbox:'깜짝이야!', cracker:'축하해!', ballpit:'볼풀 최고!', giftbig:'엄청 큰 선물!', hay:'폭신폭신~', garden:'당근 자란다!', heartarch:'장미 향기~', cupcake:'냠냠 맛있겠다', lollipop:'달콤해 보여!', macaron:'간식 시간!', starlamp:'별이 반짝!', cloudbench:'구름에 앉았다~', rainarch:'무지개다!', crystal:'반짝반짝 예쁘다', giftpile:'선물 뭐지?', teddy:'곰돌이 안녕!', balloons:'풍선 하나만~', bench:'쉬는 중~', fountain:'시원하다!', well:'물 한 모금!', swing:'슝~!', flowerbed:'꽃 냄새~', sunflower:'해바라기다!', pond:'개구리 있나?', lamp:'반짝반짝', mailbox:'편지 왔나?', tree:'그늘 좋다~' };
 function vBlocked(){
   const H = houseData(), b = new Set();
   for (const o of H.placed){ if (VITEMS[o.id].cat === 'floor') continue; const q = vFoot(o); for (let y = q.y0; y <= q.y1; y++) for (let x = q.x0; x <= q.x1; x++) b.add(x + ',' + y); }
@@ -4117,7 +4821,7 @@ function renderVillage(){
   if (V.npcs) vNpcsSync();
   const owned = Object.keys(VITEMS).filter(id => (H.inv[id] || 0) > 0);
   const cats = VCATS.map(([k, l]) => `<button class="vchip" data-cat="${k}" aria-pressed="${V.cat === k}">${l}</button>`).join('');
-  const shopItems = Object.keys(VITEMS).filter(id => VITEMS[id].price > 0 && (V.cat === 'all' || VITEMS[id].cat === V.cat));
+  const shopItems = Object.keys(VITEMS).filter(id => VITEMS[id].price > 0 && (V.cat === 'all' || VITEMS[id].cat === V.cat || VITEMS[id].th === V.cat));
   const placedN = id => H.placed.filter(o => o.id === id).length;
   screenEl.innerHTML = `<div class="vil">
     <canvas id="vcv" aria-label="방울섬 마을 꾸미기 화면"></canvas>
@@ -4140,7 +4844,7 @@ ${VISIT ? '' : `<div class="vtray"><span class="vtl">창고</span>${owned.length
       <div class="vgrid">${BH_STYLES.map(st => { const own = H.bhOwned.includes(st.id), on = H.bhStyle === st.id; return `<div class="vcard bhcard${on ? ' live' : ''}"><canvas width="140" height="120" data-bh="${st.id}" aria-hidden="true"></canvas><b>${st.name}</b><small>${on ? '지금 모습이에요' : own ? '가지고 있어요' : '방울의 집 모습 바꾸기'}</small><button class="vbuy bhbtn" data-id="${st.id}">${on ? '적용 중' : own ? '바꾸기' : '별사탕 ' + st.price}</button></div>`; }).join('')}</div>
       <p class="sethead" style="margin:6px 0 0">가구</p>
       <div class="vcats" role="group" aria-label="종류">${cats}</div>
-      <div class="vgrid">${shopItems.map(id => { const it = VITEMS[id], have = (H.inv[id] || 0) + placedN(id); return `<div class="vcard"><canvas width="140" height="120" data-vp="${id}" aria-hidden="true"></canvas><b>${it.name}</b><small>${it.w}×${it.h}칸${have ? ` · 가진 것 ${have}` : ''}</small><button class="vbuy" data-id="${id}">별사탕 ${it.price}</button></div>`; }).join('')}</div>
+      <div class="vgrid">${shopItems.map(id => { const it = VITEMS[id], have = (H.inv[id] || 0) + placedN(id); return `<div class="vcard"><canvas width="140" height="120" data-vp="${id}" aria-hidden="true"></canvas><b>${it.name}</b><small>${it.th ? `<span class="vth vth-${it.th}">${VTHEME[it.th]}</span> ` : ''}${it.w}×${it.h}칸${have ? ` · 가진 것 ${have}` : ''}</small><button class="vbuy" data-id="${id}">별사탕 ${it.price}</button></div>`; }).join('')}</div>
     </div>`}
   </div>`;
   if (V.tab === 'net' && !VISIT){ screenEl.querySelector('.vshop').innerHTML = netPanelHtml(); }
