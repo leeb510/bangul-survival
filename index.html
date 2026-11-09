@@ -507,9 +507,9 @@ const WPN = {
   beam:   { name:'햇살 돋보기', noEvo:true, cd:[2.2,2.2,2.2,1.8,1.8], dmg:[18,22.5,22.5,22.5,22.5], len:[180,180,180,260,260], n:[1,1,2,2,2], wid:[6,6,6,6,11],
             special:'햇살이 굵어지고, 맞은 적이 1초 동안 불타요',
             desc:['적이 가장 많은 쪽으로 햇살을 쏴서 일직선의 적을 모두 맞혀요','햇살 공격력 +25%','햇살 2줄기 (반대쪽으로 하나 더)','햇살이 더 길어지고 더 자주 쏴요','햇살이 굵어지고, 맞은 적이 1초 동안 불타요'] },
-  ladybug:{ name:'무당벌레 친구', noEvo:true, cd:[.5,.5,.5,.5,.4], n:[1,2,2,3,3], dmg:[7,7,10,10,13],
+  ladybug:{ name:'무당벌레 친구', noEvo:true, cd:[.5,.5,.5,.5,.4], n:[1,2,2,3,3], dmg:[21,21,30,30,39],
             special:'공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요',
-            desc:['꼬마 무당벌레가 날아가 가까운 적을 콕 쏘고 돌아와요','무당벌레 2마리','쏘는 공격력 +43%','무당벌레 3마리','공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요'] },
+            desc:['꼬마 무당벌레가 날아가 적을 콕 쏘고 돌아와요 (보스를 먼저 노려요)','무당벌레 2마리','쏘는 공격력 +43%','무당벌레 3마리','공격력 +30%, 더 자주, 쏘인 적이 3초 동안 독에 걸려요'] },
   mine:   { name:'솜사탕 지뢰', noEvo:true, cd:[1.4,1.4,1.4,1.0,1.0], dmg:[24,24,31.2,31.2,40], rad:[40,50,50,50,50], max:[4,4,6,6,6],
             special:'공격력 +28%, 터지면 주변 적이 0.6초 동안 기절해요',
             desc:['지나간 자리에 솜사탕 지뢰를 놓아요. 적이 밟으면 펑!','폭발 범위 +25%','지뢰 최대 6개, 공격력 +30%','더 자주 놓아요','공격력 +28%, 터지면 주변 적이 0.6초 동안 기절해요'] },
@@ -1206,19 +1206,24 @@ function updateBugs(w, dt){
   let tg = null;
   w.bugs.forEach((b, i) => {
     b.ph += dt * 30;
-    const oa = w.a + i * TAU / w.bugs.length, ox = p.x + Math.cos(oa) * 26, oy = p.y - 20 + Math.sin(oa) * 11;
+    const oa = w.a + i * TAU / w.bugs.length, ox = p.x + Math.cos(oa) * 32, oy = p.y - 22 + Math.sin(oa) * 13;
     if (b.st === 0){
       const k = Math.min(1, dt * 8); b.x += (ox - b.x) * k; b.y += (oy - b.y) * k;
       b.cd -= dt;
       if (b.cd <= 0){
-        if (!tg) tg = nearestEnemies(w.bugs.length, 230);
+        if (!tg){
+          // 근처에 보스가 있으면 모두 보스부터 쏘아요
+          let boss = null, bd = 260 * 260;
+          for (const e of G.enemies){ if (e.dead || !e.boss) continue; const d2 = (e.x - p.x) ** 2 + (e.y - p.y) ** 2; if (d2 < bd){ bd = d2; boss = e; } }
+          tg = boss ? [boss] : nearestEnemies(w.bugs.length, 230);
+        }
         if (tg.length){ b.tgt = tg[i % tg.length]; b.st = 1; } else b.cd = .2;
       }
     } else if (b.st === 1){
       const e = b.tgt;
       if (!e || e.dead || Math.hypot(b.x - p.x, b.y - p.y) > 340){ b.st = 2; return; }
       const dx = e.x - b.x, dy = e.y - e.r * .7 - e.z * .5 - b.y, d = Math.hypot(dx, dy) || 1;
-      if (d < e.r + 6){
+      if (d < e.r + 9){
         damage(e, dmg, dx / d, dy / d, .25);
         if (L >= 4) addDot(e, dmg * .8, 3, '#7ee08a');
         burst(b.x, b.y, ['#ff5d6a', '#fff'], 3, { speed:60, g:0 });
@@ -2588,7 +2593,7 @@ function render(rt){
   }
   // ladybug friends
   for (const w of G.weapons) if (w.id === 'ladybug' && w.bugs) for (const b of w.bugs){
-    X.save(); X.translate(b.x, b.y);
+    X.save(); X.translate(b.x, b.y); X.scale(1.5, 1.5);
     const fl = Math.abs(Math.sin(b.ph)) * .8 + .2;
     X.fillStyle = 'rgba(255,255,255,.75)'; ell(-4, -3, 4 * fl + 1, 2.4, -.5); X.fill(); ell(4, -3, 4 * fl + 1, 2.4, .5); X.fill();
     ell(0, 0, 5.2, 4.6); fs('#ff5d6a', 1.6);
