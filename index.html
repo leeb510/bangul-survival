@@ -239,6 +239,7 @@ body.touch .card .key{display:none}
 .netrow input{flex:1;min-width:150px;font:inherit;font-size:16px;padding:8px 12px;border:2px solid var(--ink);border-radius:12px;background:#fffdf8;color:var(--ink)}
 .netme{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center}
 .netme span{font-size:15px}
+.altf{font-family:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif!important;font-weight:700!important}
 .netname{font-family:var(--font-display);font-weight:400;font-size:20px;color:#7c6cb0}
 .nethd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .nethd .vbuy{font-size:14px;padding:3px 12px}
@@ -3000,6 +3001,15 @@ const VITEMS = {
 const FB_CFG = { apiKey:'AIzaSyBi2r4JGg-Sfy2ZeVxWaSwOt7XZM1FFGG8', projectId:'bangul-island' };
 const NET_ON = () => !!(FB_CFG.apiKey && FB_CFG.projectId);
 const escH = v => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+// 게임 글씨체(Jua)에 없는 한글(예: 뜌·똠)이 섞이면 그 글자만 다른 글씨체로 보여서, 그런 이름은 통째로 같은 글씨체로 보여줘요
+let KSX = null;
+function juaOK(t){
+  if (!KSX){ KSX = new Set(); try { const td = new TextDecoder('euc-kr'); for (let a = 0xB0; a <= 0xC8; a++) for (let b = 0xA1; b <= 0xFE; b++) KSX.add(td.decode(new Uint8Array([a, b]))); } catch(e){} }
+  if (KSX.size < 2000) return true;
+  for (const ch of String(t)){ const c = ch.codePointAt(0); if (c >= 0xAC00 && c <= 0xD7A3 && !KSX.has(ch)) return false; }
+  return true;
+}
+const nameH = t => juaOK(t) ? escH(t) : `<span class="altf">${escH(t)}</span>`;
 const netErr = m => Object.assign(new Error(m), { user:true });
 let netAuth = load('bangul.net.auth', null);
 async function netToken(){
@@ -3105,7 +3115,7 @@ function netRecsHtml(){
   if (!V.recs) return '<p class="lead" style="margin:0">추천 친구를 불러오는 중이에요…</p>';
   const list = V.recs.filter(q => !meta.net.friends.some(f => f.uid === q.uid));
   if (!list.length) return '<p class="lead" style="margin:0">아직 추천할 친구가 없어요. 조금 뒤에 새로고침해 보세요!</p>';
-  return `<div class="vgrid">${list.map(q => `<div class="vcard netf"><span class="netrec">추천 친구</span><b>${escH(q.name)}</b><small>${q.updated ? netAgo(q.updated) + ' 마을을 꾸몄어요' : '방울섬 주민'}</small><div class="resrow"><button class="vbuy netadd" data-u="${escH(q.uid)}">친구 추가</button><button class="vbuy netgo2" data-u="${escH(q.uid)}">놀러가기</button></div></div>`).join('')}</div>`;
+  return `<div class="vgrid">${list.map(q => `<div class="vcard netf"><span class="netrec">추천 친구</span><b>${nameH(q.name)}</b><small>${q.updated ? netAgo(q.updated) + ' 마을을 꾸몄어요' : '방울섬 주민'}</small><div class="resrow"><button class="vbuy netadd" data-u="${escH(q.uid)}">친구 추가</button><button class="vbuy netgo2" data-u="${escH(q.uid)}">놀러가기</button></div></div>`).join('')}</div>`;
 }
 function netPanelHtml(){
   if (!NET_ON()) return `<div class="netbox"><b class="nethead">친구 마을 놀러가기</b><p class="lead" style="margin:0">친구 기능을 준비하고 있어요. 조금만 기다려 주세요!</p></div>`;
@@ -3114,10 +3124,10 @@ function netPanelHtml(){
     <p class="lead" style="margin:0">닉네임을 정하면 다른 방울섬 친구들에게 추천 친구로 보여요. 서로의 방울섬 마을에 놀러갈 수 있어요.</p>
     <div class="netrow"><input id="netName" maxlength="12" placeholder="닉네임 (12자까지)" autocomplete="off" aria-label="닉네임"><button class="vbuy" id="netJoin">시작하기</button></div></div>`;
   const when = n.up ? new Date(n.up).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
-  return `<div class="netbox"><div class="netme"><span>내 닉네임 <b class="netname">${escH(n.name)}</b></span><button class="vbuy" id="netUp">내 마을 올리기</button></div>
+  return `<div class="netbox"><div class="netme"><span>내 닉네임 <b class="netname">${nameH(n.name)}</b></span><button class="vbuy" id="netUp">내 마을 올리기</button></div>
     <small class="netsub">${when ? `마지막으로 올린 때: ${when}` : '아직 마을을 올리지 않았어요'} · 마을에서 나갈 때 자동으로 올라가요</small></div>
     <p class="sethead" style="margin:0">내 친구 ${n.friends.length ? n.friends.length + '명' : ''}</p>
-    ${n.friends.length ? `<div class="vgrid">${n.friends.map((f, i) => `<div class="vcard netf"><b>${escH(f.name)}</b><small>내 친구</small><div class="resrow"><button class="vbuy netgo" data-i="${i}">놀러가기</button><button class="vbuy netdel" data-i="${i}">삭제</button></div></div>`).join('')}</div>` : '<p class="lead" style="margin:0">아래 추천 친구에서 친구를 추가해 보세요!</p>'}
+    ${n.friends.length ? `<div class="vgrid">${n.friends.map((f, i) => `<div class="vcard netf"><b>${nameH(f.name)}</b><small>내 친구</small><div class="resrow"><button class="vbuy netgo" data-i="${i}">놀러가기</button><button class="vbuy netdel" data-i="${i}">삭제</button></div></div>`).join('')}</div>` : '<p class="lead" style="margin:0">아래 추천 친구에서 친구를 추가해 보세요!</p>'}
     <div class="nethd"><p class="sethead" style="margin:0">추천 친구</p><button class="vbuy" id="netRef">새로고침</button></div>
     <div id="netRecs">${netRecsHtml()}</div>`;
 }
@@ -3187,7 +3197,7 @@ function houseData(){
   return H;
 }
 const V = { rot:0, rotAnim:null, cv:null, tab:'deco', cat:'all', sel:null, pick:null, ghost:null, moveFrom:null, camX:0, camY:0, z:1, drag:null, msg:'', msgT:0 };
-function vToast(t){ V.msg = t; V.msgT = 1.6; const el = document.getElementById('vMsg'); if (el){ el.textContent = t; el.hidden = false; } }
+function vToast(t){ V.msg = t; V.msgT = 1.6; const el = document.getElementById('vMsg'); if (el){ el.textContent = t; el.hidden = false; el.classList.toggle('altf', !juaOK(t)); } }
 // ===== 아이소메트릭(입체) 마을 그리기 =====
 const HW = 32, HH = 16, SLAB = 34;
 const vDims = (id, f) => { const it = VITEMS[id]; return f && it.w !== it.h ? [it.h, it.w] : [it.w, it.h]; };
@@ -4113,7 +4123,7 @@ function renderVillage(){
     <canvas id="vcv" aria-label="방울섬 마을 꾸미기 화면"></canvas>
     <div class="vtop">
       <button class="big alt" id="bBack">${VISIT ? '돌아오기' : '돌아가기'}</button>
-      <h2>${VISIT ? `${escH(VISIT.name)}의 마을` : '방울섬 마을'}</h2>
+      <h2${VISIT && !juaOK(VISIT.name) ? ' class="altf"' : ''}>${VISIT ? `${escH(VISIT.name)}의 마을` : '방울섬 마을'}</h2>
       ${VISIT ? '' : `<div class="seg vtabs" role="tablist"><button data-tab="deco" aria-pressed="${V.tab === 'deco'}">꾸미기</button><button data-tab="res" aria-pressed="${V.tab === 'res'}">주민</button><button data-tab="shop" aria-pressed="${V.tab === 'shop'}">상점</button><button data-tab="net" aria-pressed="${V.tab === 'net'}">친구</button></div>`}
       ${candyHtml(meta.coins)}
       ${V.tab === 'deco' && V.sel ? `<div class="vact"><b>${VITEMS[V.sel.id].name}</b><button id="vMove">옮기기</button><button id="vFlip">돌리기</button><button id="vStore">창고로</button><button id="vDesel">닫기</button></div>` : ''}
