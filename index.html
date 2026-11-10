@@ -575,6 +575,12 @@ const CHARS = [
     mods:{ armor:.15, hp:.2, speed:-.05 }, role:'보호형', traits:['받는 피해 -15%', '최대 체력 +20%', '이동 속도 -5%'] },
   { id:'banjjak', name:'반짝', body:'#b9a6ff', belly:'#ddd3ff', foot:'#8a76d6', hat:'starhat', start:'note', start2:'star', cost:1000,
     mods:{ xp:.15, coin:.2, crit:.08, hp:-.1 }, role:'행운형', traits:['경험치 +15%', '별사탕 +20%', '치명타 확률 +8%', '최대 체력 -10%'] },
+  { id:'haenim', name:'해님', body:'#ffb27a', belly:'#ffdcbc', foot:'#e08a52', hat:'sun', start:'beam', start2:'aura', cost:1500,
+    mods:{ power:.12, area:.1, hp:-.1 }, role:'집중형', traits:['공격력 +12%', '공격 범위 +10%', '최대 체력 -10%'] },
+  { id:'ruru', name:'루루', body:'#ff9a9a', belly:'#ffd6d6', foot:'#d96666', hat:'antenna', start:'ladybug', start2:'petal', cost:1500,
+    mods:{ cd:.08, crit:.1, speed:.05, hp:-.12 }, role:'사냥형', traits:['쿨타임 -8%', '치명타 확률 +10%', '이동 속도 +5%', '최대 체력 -12%'] },
+  { id:'mongsil', name:'몽실', body:'#ffd3ea', belly:'#dff1ff', foot:'#e49ac2', hat:'cotton', start:'mine', start2:'bubble', cost:1500,
+    mods:{ armor:.1, magnet:.25, area:.08, speed:-.05 }, role:'함정형', traits:['받는 피해 -10%', '줍는 범위 +25%', '공격 범위 +8%', '이동 속도 -5%'] },
 ];
 const charUnlocked = c => !c.cost || meta.unlockedChars.includes(c.id);
 const equipFor = ch => { if (!ch || !ch.id || ch.id === 'random') return { aurora:null, wings:null, face:null }; return meta.equipBy[ch.id] || (meta.equipBy[ch.id] = { aurora:null, wings:null, face:null }); };
@@ -2119,6 +2125,26 @@ function drawHat(kind){
       ell(sx * 5, -19.5, 3.7, 9, sx * .22); fs('#fff3f7', 2);
       X.fillStyle = '#ffb3c8'; ell(sx * 5.1, -19, 1.6, 6.2, sx * .22); X.fill();
     }
+  } else if (kind === 'sun'){
+    // 해님: 해 모양 머리띠
+    const sp = (typeof performance !== 'undefined' ? performance.now() / 1000 : 0) * .6;
+    X.save(); X.translate(1, -17);
+    for (let k = 0; k < 8; k++){ const a = sp + k / 8 * TAU; X.save(); X.rotate(a); X.beginPath(); X.moveTo(-2.2, -6.5); X.lineTo(0, -11); X.lineTo(2.2, -6.5); X.closePath(); fs('#ffcf5a', 1.3); X.restore(); }
+    ell(0, 0, 6.8, 6.8); fs('#ffe58a', 1.8);
+    X.fillStyle = INK; X.beginPath(); X.arc(-2.2, -.6, .9, 0, TAU); X.arc(2.2, -.6, .9, 0, TAU); X.fill();
+    X.strokeStyle = INK; X.lineWidth = 1; X.beginPath(); X.arc(0, .6, 1.8, .3, Math.PI - .3); X.stroke();
+    X.restore();
+  } else if (kind === 'antenna'){
+    // 루루: 무당벌레 더듬이 + 등 무늬
+    X.fillStyle = INK; for (const [sx, sy, r] of [[-8.5, -3.5, 1.9], [8.6, -2.5, 1.7], [-6, 3.5, 1.5], [7.8, 4.2, 1.4]]){ X.beginPath(); X.arc(sx, sy, r, 0, TAU); X.fill(); }
+    X.strokeStyle = INK; X.lineWidth = 1.8;
+    for (const sx of [-1, 1]){ X.beginPath(); X.moveTo(sx * 3, -11); X.quadraticCurveTo(sx * 5, -18, sx * 8.5, -20.5); X.stroke(); ell(sx * 8.8, -21, 2.6, 2.6); fs('#ff7f8f', 1.4); }
+  } else if (kind === 'cotton'){
+    // 몽실: 솜사탕 모자
+    X.strokeStyle = INK; X.lineWidth = 2.6; X.beginPath(); X.moveTo(1, -10); X.lineTo(2, -16); X.stroke(); X.strokeStyle = '#fffaf0'; X.lineWidth = 1.3; X.stroke();
+    blobs([[-3.5, -18, 4.4], [2.5, -21.5, 5], [7.5, -17.5, 4], [1.5, -16, 4.2]], '#ffc6e2', 1.7);
+    X.fillStyle = '#c9ecff'; ell(4.5, -20, 2.6, 2); X.fill(); ell(-2.5, -17, 2.2, 1.6); X.fill();
+    X.fillStyle = 'rgba(255,255,255,.75)'; ell(.5, -23, 1.6, 1); X.fill();
   } else if (kind === 'acorn'){
     const cap = () => { X.beginPath(); X.moveTo(-12.6, -4); X.bezierCurveTo(-13, -17.5, 13, -17.5, 12.6, -4); X.quadraticCurveTo(0, -8.5, -12.6, -4); X.closePath(); };
     X.save();
@@ -2908,7 +2934,7 @@ const ACH = [
   { n:35, t:3, name:'꾸미기 장인',       desc:'치장템 14종 모두 모으기',                            r:200, test:() => meta.ownedCos.length >= COS_LIST.length, prog:() => [meta.ownedCos.length, COS_LIST.length] },
   { n:36, t:3, name:'번개 처치',         desc:'하드에서 마지막 왕이 나타나고 60초 안에 쓰러뜨리기', r:225, test:() => G && G.bossFast },
   { n:37, t:3, name:'무적의 10분',       desc:'한 판에서 처음 10분 동안 한 번도 안 맞기',           r:250, test:() => G && G.time >= 600 && !G.hitOnce },
-  { n:38, t:3, name:'팔방미인',          desc:'캐릭터 8명 모두로 일반 15단계 클리어',               r:250, test:() => meta.stats.clr8.length >= CHARS.length, prog:() => [meta.stats.clr8.length, CHARS.length] },
+  { n:38, t:3, name:'팔방미인',          desc:'서로 다른 캐릭터 8명으로 일반 15단계 클리어',        r:250, test:() => meta.stats.clr8.length >= 8, prog:() => [Math.min(8, meta.stats.clr8.length), 8] },
   { n:39, t:3, name:'그랜드 슬램',       desc:'일반 15 + 하드 15 + 챌린지 2, 32개 스테이지 모두 클리어', r:375, test:() => allNormalCleared() && meta.hardCleared.every(Boolean) && CHALS.every(i => meta.cleared[i]), prog:() => [NORMAL.filter(i => meta.cleared[i]).length + meta.hardCleared.filter(Boolean).length + CHALS.filter(i => meta.cleared[i]).length, NORMAL.length + HARD_COUNT + CHALS.length] },
   { n:40, t:3, name:'방울섬의 전설',     desc:'업적 39개 모두 달성',                                r:500, test:() => ACH.every(a => a.n === 40 || meta.ach[a.n]), prog:() => [ACH.filter(a => a.n !== 40 && meta.ach[a.n]).length, 39] },
 ];
@@ -4689,6 +4715,9 @@ const NPC_LINES = {
   mochi:['말랑말랑~', '낮잠 자고 싶어…', '쫀득쫀득!'],
   somi:['포근해~', '구름 위를 걷는 기분!', '살랑살랑~'],
   banjjak:['반짝반짝!', '별이 보고 싶어', '오늘 하루도 빛나!'],
+  haenim:['오늘도 맑음!', '햇볕 쬐러 가자~', '따끈따끈해!'],
+  ruru:['붕붕~ 날아볼까?', '보스는 내가 잡을게!', '점 몇 개게?'],
+  mongsil:['몽실몽실~', '솜사탕 먹을래?', '폭신한 데 좋아'],
 };
 const NPC_SPOT = { scarecrow:'안녕 허수아비!', windmill:'빙글빙글~', henhouse:'삐약삐약!', beehive:'꿀 냄새~', applebasket:'사과 하나만!', donut:'도넛 방석 푹신!', icecream:'아이스크림 먹고 싶다', teacup:'차 한잔~', pudding:'말랑말랑!', candles:'소원 빌자!', moon:'달님 안녕~', telescope:'별 보인다!', rainbowslide:'슝~ 미끄럼!', hotair:'날아가고 싶다', starpond:'별이 비친다!', planet:'우주다!', musicbox:'노래 나온다~', toytrain:'칙칙폭폭!', rockinghorse:'이랴이랴!', jackbox:'깜짝이야!', cracker:'축하해!', ballpit:'볼풀 최고!', giftbig:'엄청 큰 선물!', hay:'폭신폭신~', garden:'당근 자란다!', heartarch:'장미 향기~', cupcake:'냠냠 맛있겠다', lollipop:'달콤해 보여!', macaron:'간식 시간!', starlamp:'별이 반짝!', cloudbench:'구름에 앉았다~', rainarch:'무지개다!', crystal:'반짝반짝 예쁘다', giftpile:'선물 뭐지?', teddy:'곰돌이 안녕!', balloons:'풍선 하나만~', bench:'쉬는 중~', fountain:'시원하다!', well:'물 한 모금!', swing:'슝~!', flowerbed:'꽃 냄새~', sunflower:'해바라기다!', pond:'개구리 있나?', lamp:'반짝반짝', mailbox:'편지 왔나?', tree:'그늘 좋다~' };
 function vBlocked(){
